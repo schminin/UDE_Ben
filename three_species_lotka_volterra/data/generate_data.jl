@@ -21,6 +21,7 @@ end
 # Simulate dense reference data
 tspan = (0.0, 10.0)
 t = tspan[1]:0.05:tspan[end]
+#IC = [2.0,2.0,1.0]
 
 prob = ODEProblem(dynamics!, IC, tspan, parameter_values)
 sol = solve(prob, Tsit5(), reltol=1e-8, saveat = t)
