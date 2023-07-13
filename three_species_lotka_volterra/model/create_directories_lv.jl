@@ -87,7 +87,7 @@ function load_data(data_path::String,problem_name::String)
     #data used for training
     df =CSV.read(data_path, DataFrame, delim = ",")
     t = df[!, "t"]
-    y_obs = identity.((Array(df[!, 2:end])))
+    y_obs = identity.(transpose(Array(df[!, 2:end])))
 
     # data used for training
     idx = findall(in(t), t_full)

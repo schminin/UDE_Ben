@@ -93,8 +93,6 @@ prob_nn = ODEProblem(dynamics!, IC, tspan, ps);
 #Training
 stepnorm_bfgs = 0.1*lr_adam
 
-p_opt, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3 = train_lv(ps, st, lr_adam, λ_reg, stepnorm_bfgs, epochs, 0)
-
 # Define a predictor
 function predict(θ, X = IC, T = t; solver=solver, tolerance=tolerance, sense=sense, prob_nn=prob_nn)
     _prob = remake(prob_nn, u0 = X, tspan = (T[1], T[end]), p = θ)  # update ODE Problem with nn parameters
@@ -103,6 +101,8 @@ function predict(θ, X = IC, T = t; solver=solver, tolerance=tolerance, sense=se
                 sensealg = sense
                 ))
 end;
+
+p_opt, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3 = train_lv(ps, st, lr_adam, λ_reg, stepnorm_bfgs, epochs, 12)
 
 t_plot = t_full
 pred = predict(ps, IC, t)
