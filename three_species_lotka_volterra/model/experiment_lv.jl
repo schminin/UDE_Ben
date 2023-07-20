@@ -14,14 +14,15 @@ rng = Random.default_rng()
 Random.seed!(rng, 1)
 
 const test_setup = true  # if used on the cluster this has to be set to false
+const create_plots = true
 
-const experiment_name = "06_07_2023"
+const experiment_name = "20_07_23"
 
 const transform = "log";
 const param_range = (1e-5* (1-1e-6), 100000.0 * (1+1e-6));
 
 const problem_name = "three_species_lotka_volterra"
-exp_sampling_strategy = ("nada", )
+exp_sampling_strategy = ("test", )
 exp_mechanistic_setting = ("lv_fully_known")
 
 const solver = KenCarp4()
@@ -29,7 +30,7 @@ const sense = ForwardDiffSensitivity()
 tolerance = (1e-12, )
 
 exp_λ_reg = (1e4, 1e3, 1e2, 1.0, 1e-2, 1e-3, )
-epochs = (500, 3000) # (epochs_adam, epochs_bfgs)
+epochs = (500, 300) # (epochs_adam, epochs_bfgs)
 exp_lr_adam = (1e-4, 1e-3, 1e-2, 1e-1) # lr_bfgs = 0.1*lr_adam
 exp_hidden_layers = 5#(1, 2, 3, )
 exp_hidden_neurons = 3#(4, 8, 16)
@@ -49,17 +50,10 @@ end
 mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row = experiments[array_nr]
 exp_specifics = array_nr
 
-
-if test_setup
-    array_nr = 1
-else 
-    array_nr = parse(Int, ARGS[1])
-end
-
 ############# Prepare Experiment #######################
 # Load functinalities
 if test_setup
-    epochs = (10, 10)
+    epochs = (50, 200)
     include("$(problem_name)/model/create_directories_lv.jl")
     include("$(problem_name)/model/utils_lv.jl")
     include("$(problem_name)/reference.jl")
@@ -105,9 +99,33 @@ end;
 p_opt, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3 = train_lv(ps, st, lr_adam, λ_reg, stepnorm_bfgs, epochs, 12)
 
 t_plot = t_full
-pred = predict(ps, IC, t)
+pred = predict(p_opt, IC, t)
 
+
+
+############### Evaluate Experiment ###################
+# log results
+# loss curve
+if create_plots
+    plot_loss_trajectory(losses; path_to_store=experiment_run_path, return_plot=false)
+    plot_regularization_loss_trajectory(losses_regularization; path_to_store=experiment_run_path, return_plot=false)
+end
+
+# store final values of all mechanistic parameters to csv
+pars = vcat(parameter_names)
+p_mech = convert(Vector{Union{Missing,Float64}}, p_opt[1:length(pars)])
+
+#store parameters
+store_parameters(experiment_run_path, pars, p_mech)
+
+#prediction plot
 plt = plot(t, pred[1,:], label="u1", color=1)
-
 plot!(t, pred[2,:], label="u2", color=2)
 plot!(t, pred[3,:], label="u3", xlabel="time", color=3)
+
+# store model predictions for observables and hidden states
+open(joinpath(experiment_run_path, "predictions.csv"), "w") do io
+    header = ["t" "pSTAT5A_rel" "pSTAT5B_rel" "rSTAT5A_rel" "STAT5A" "STAT5B" "pApB" "pApA" "pBpB" "nucpApA" "nucpApB" "nucpBpB"]
+    writedlm(io, header, ",")
+    writedlm(io, [t_plot transpose(pred_obs) transpose(pred)], ",")
+end
