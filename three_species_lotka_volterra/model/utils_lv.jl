@@ -71,7 +71,7 @@ function nll(θ, IC::Vector{Float64}=IC, solver=solver, t::Vector{Float64}=t, y_
         #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
         log_sigma_sq = [θ.var1, θ.var2, θ.var3]
         lc_1 = size(y_obs)[2]/2 * log_sigma_sq
-        lc_2 = sum(abs2, pred.-y_obs, dims=2) ./ exp.(log_sigma_sq)*0.5
+        lc_2 = sum(abs2, X̂ .- y_obs, dims=2) ./ exp.(log_sigma_sq)*0.5
         return sum(lc_1+lc_2)  
     else
         return Inf
@@ -216,10 +216,10 @@ function plot_hidden_boehm(t_plot::Vector{Float64}, pred::Matrix{Float64}, t_ful
     savefig(prediction_plot, joinpath(path_to_store, "hidden_states.png"))
 end
 
-function plot_observed_boehm(t_plot::Vector{Float64}, pred_obs::Matrix{Float64}, t_full::Vector{Float64}, y_obs_full::Matrix{Float64}, t::Vector{Float64}, y_obs::Matrix{Float64}, path_to_store::String, ps::ComponentVector)
-    p1 = plot_observed_trajectory("pSTAT5A_rel", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.n_pSTAT5A_rel)), return_plot=true, plot_observed=true, plot_noise=true)
-    p2 = plot_observed_trajectory("pSTAT5B_rel", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.n_pSTAT5B_rel)), return_plot=true, plot_observed=true, plot_noise=true)
-    p3 = plot_observed_trajectory("rSTAT5A_rel", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; std=sqrt.(exp.(ps.n_rSTAT5A_rel)), return_plot=true, plot_observed=true, plot_noise=true)
+function plot_observed_lv(t_plot::Vector{Float64}, pred_obs::Matrix{Float64}, t_full::Vector{Float64}, y_obs_full::Matrix{Float64}, t::Vector{Float64}, y_obs::Matrix{Float64}, path_to_store::String, ps::ComponentVector)
+    p1 = plot_observed_trajectory("pSTAT5A_rel", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.u1)), return_plot=true, plot_observed=true, plot_noise=true)
+    p2 = plot_observed_trajectory("pSTAT5B_rel", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.u2)), return_plot=true, plot_observed=true, plot_noise=true)
+    p3 = plot_observed_trajectory("rSTAT5A_rel", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; std=sqrt.(exp.(ps.u3)), return_plot=true, plot_observed=true, plot_noise=true)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_with_noise.png"))
     
