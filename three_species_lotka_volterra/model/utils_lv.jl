@@ -217,15 +217,15 @@ function plot_hidden_boehm(t_plot::Vector{Float64}, pred::Matrix{Float64}, t_ful
 end
 
 function plot_observed_lv(t_plot::Vector{Float64}, pred_obs::Matrix{Float64}, t_full::Vector{Float64}, y_obs_full::Matrix{Float64}, t::Vector{Float64}, y_obs::Matrix{Float64}, path_to_store::String, ps::ComponentVector)
-    p1 = plot_observed_trajectory("pSTAT5A_rel", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.u1)), return_plot=true, plot_observed=true, plot_noise=true)
-    p2 = plot_observed_trajectory("pSTAT5B_rel", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.u2)), return_plot=true, plot_observed=true, plot_noise=true)
-    p3 = plot_observed_trajectory("rSTAT5A_rel", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; std=sqrt.(exp.(ps.u3)), return_plot=true, plot_observed=true, plot_noise=true)
+    p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.var1)), return_plot=true, plot_observed=true, plot_noise=true)
+    p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.var2)), return_plot=true, plot_observed=true, plot_noise=true)
+    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; std=sqrt.(exp.(ps.var3)), return_plot=true, plot_observed=true, plot_noise=true)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_with_noise.png"))
     
-    p1 = plot_observed_trajectory("pSTAT5A_rel", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; return_plot=true, plot_observed=true, plot_noise=false)
-    p2 = plot_observed_trajectory("pSTAT5B_rel", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=true, plot_noise=false)
-    p3 = plot_observed_trajectory("rSTAT5A_rel", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; return_plot=true, plot_observed=true, plot_noise=false)
+    p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; return_plot=true, plot_observed=true, plot_noise=false)
+    p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=true, plot_noise=false)
+    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; return_plot=true, plot_observed=true, plot_noise=false)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_without_noise.png"))
 end

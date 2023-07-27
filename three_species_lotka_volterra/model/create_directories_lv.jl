@@ -39,9 +39,10 @@ function create_paths(problem_name::String, experiment_name::String, sampling_st
     return (experiment_series_path, exp_run_path, data_path, parameter_path)
 end
 
-function load_data(data_path::String,problem_name::String)
+function load_data(data_path::String,problem_name::String, noise::Int)
 
     # true data used for plotting
+
     full_data = readdlm(joinpath(pwd(), problem_name, "data/lotka_volterra_reference.csv"), ','; header=true)[1]'
     t_full = full_data[1,:]
     y_obs_full = full_data[2:4, :]
@@ -80,9 +81,9 @@ function load_data(data_path::String,problem_name::String)
             a3_1 = transform_par(random_vec[10]),
             a3_2 = transform_par(random_vec[11]),
             a3_3 = transform_par(random_vec[12]),
-            var1 = 0,
-            var2 = 0,
-            var3 = 0)
+            var1 = noise,
+            var2 = noise,
+            var3 = noise)
 
     #data used for training
     df =CSV.read(data_path, DataFrame, delim = ",")
