@@ -22,8 +22,8 @@ const transform = "log";
 const param_range = (1e-5* (1-1e-6), 100000.0 * (1+1e-6));
 
 const problem_name = "three_species_lotka_volterra"
-exp_sampling_strategy = ("test", )
-exp_mechanistic_setting = ("lv_fully_known")
+exp_sampling_strategy = ("no_sampling", )
+exp_mechanistic_setting = ("lv_missing_dynamics")
 
 const solver = KenCarp4()
 const sense = ForwardDiffSensitivity()
@@ -53,7 +53,7 @@ exp_specifics = array_nr
 ############# Prepare Experiment #######################
 # Load functinalities
 if test_setup
-    epochs = (50, 200)
+    epochs = (50, 20)
     include("$(problem_name)/model/create_directories_lv.jl")
     include("$(problem_name)/model/utils_lv.jl")
     include("$(problem_name)/reference.jl")
@@ -101,6 +101,10 @@ p_opt, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, 
 t_plot = t_full
 pred = predict(p_opt, IC, t)
 
+#prediction plot
+plt = plot(t, pred[1,:], label="u1", color=1)
+plot!(t, pred[2,:], label="u2", color=2)
+plot!(t, pred[3,:], label="u3", xlabel="time", color=3)
 
 
 ############### Evaluate Experiment ###################
@@ -109,8 +113,19 @@ pred = predict(p_opt, IC, t)
 if create_plots
     plot_loss_trajectory(losses; path_to_store=experiment_run_path, return_plot=false)
     plot_regularization_loss_trajectory(losses_regularization; path_to_store=experiment_run_path, return_plot=false)
+    plot_observed_lv(t, pred, t, )
 end
 
+#store training results over epochs
+open(joinpath(experiment_run_path, "training_curves.csv"), "w") do io
+    header = ["epoch" "loss" "regularization_loss" "r1" "a1_1" "a1_2" "a1_3" "r2" "a2_1" "a2_2" "a2_3" "r3" "a3_1" "a3_2" "a3_3"]
+    writedlm(io, header, ",")
+    if mechanistic_setting == "lv_missing_dynamics"
+        writedlm(io, [1:length(losses) losses losses_regularization repeat([missing], length(losses)) a1_1 a1_2 a1_3 repeat([missing], length(losses)) a2_1 a2_2 a2_3 repeat([missing], length(losses)) a3_1 a3_2 a3_3], ",")
+    else
+        writedlm(io, [1:length(losses) losses losses_regularization r1 a1_1 a1_2 a1_3 r2 a2_1 a2_2 a2_3 r3 a3_1 a3_2 a3_3], ",")
+    end
+end
 # store final values of all mechanistic parameters to csv
 pars = vcat(parameter_names)
 p_mech = convert(Vector{Union{Missing,Float64}}, p_opt[1:length(pars)])
@@ -118,14 +133,17 @@ p_mech = convert(Vector{Union{Missing,Float64}}, p_opt[1:length(pars)])
 #store parameters
 store_parameters(experiment_run_path, pars, p_mech)
 
-#prediction plot
-plt = plot(t, pred[1,:], label="u1", color=1)
-plot!(t, pred[2,:], label="u2", color=2)
-plot!(t, pred[3,:], label="u3", xlabel="time", color=3)
 
-# store model predictions for observables and hidden states
+# store model predictions
 open(joinpath(experiment_run_path, "predictions.csv"), "w") do io
-    header = ["t" "pSTAT5A_rel" "pSTAT5B_rel" "rSTAT5A_rel" "STAT5A" "STAT5B" "pApB" "pApA" "pBpB" "nucpApA" "nucpApB" "nucpBpB"]
+    header = ["t" "u1" "u2" "u3"]
     writedlm(io, header, ",")
-    writedlm(io, [t_plot transpose(pred_obs) transpose(pred)], ",")
+    writedlm(io, [t pred[1,:] pred[2,:] pred[3,:]], ",")
+end
+
+
+
+open(joinpath(experiment_series_path, "summary.csv"), "a") do io
+    loss = losses[end]
+    writedlm(io, [problem_name mechanistic_setting dataset sampling_strategy par_row array_nr epochs[1] epochs[2] lr_adam stepnorm_bfgs λ_reg act_fct_name hidden_layers hidden_neurons tolerance], ",")    
 end
