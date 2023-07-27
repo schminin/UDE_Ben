@@ -16,7 +16,7 @@ Random.seed!(rng, 1)
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
 
-const experiment_name = "20_07_23"
+const experiment_name = "27_07_23"
 
 const transform = "log";
 const param_range = (1e-5* (1-1e-6), 100000.0 * (1+1e-6));
