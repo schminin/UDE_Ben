@@ -3,8 +3,6 @@ using ComponentArrays
 using CSV, DataFrames
 using Random
 
-include("../reference.jl")
-
 function create_paths(problem_name::String, experiment_name::String, sampling_strategy::String, par_setting::String, mechanistic_setting::String, dataset::String, experiment_run::String)
     # create path to store results of experiments
     experiment_series_path = joinpath(pwd(), problem_name, "experiments", experiment_name)
@@ -48,7 +46,7 @@ function load_data(data_path::String,problem_name::String, noise::Int)
     y_obs_full = full_data[2:4, :]
     #y_hidden_full = full_data[5:end, :]
 
-    #erstmal manuell
+    # true parameter values
     p_true =(; r1 = 3.0,
                 a1_1 = 2.8, 
                 a1_2 = 6.0,
@@ -85,7 +83,7 @@ function load_data(data_path::String,problem_name::String, noise::Int)
             var2 = noise,
             var3 = noise)
 
-    #data used for training
+    # data used for training
     df =CSV.read(data_path, DataFrame, delim = ",")
     t = df[!, "t"]
     y_obs = identity.(transpose(Array(df[!, 2:end])))

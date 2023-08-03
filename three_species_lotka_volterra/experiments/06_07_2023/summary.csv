@@ -1,1 +1,0 @@
-problem,mechanistic_setting,dataset,sampling_strategy,parameter_row,array_nr,epochs_adam,epochs_bfgs,lr_adam,stepnorm_bfgs,λ_reg,act_fct_name,hidden_layers,hidden_neurons,tolerance,hidden_MSE,hidden_nMSE,obs_MSE,obs_nMSE,time,loss,NegLL

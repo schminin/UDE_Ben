@@ -1,3 +1,23 @@
+# todo:
+# 1. folder name should not end with .csv (see experiments 27_07_23)
+
+# 2. initial value of noise should be std of training data for each species
+# - generally, how you implemented this is not flexible since once something changes about the naming this won't work anymore -> really, really never use a programming approach like this in big projects (best to try to avoid it in small ones, too)
+# - we also want a different noise for each species, since the noise of each species is different. Call the parameters n_u1, n_u2 and n_u3
+
+# 3. I've changed the file locations to the way it was originally intended and is in Boehm (if you don't understand why, I can explain it to you next time we talk) -> adapt possible links from one file to the other s.t. everything works again
+#  
+
+# 4. test the setting while using the true mechanistic parameters (i.e. not random ones). This means: setting the parameters, loading and defining the model. Then:
+# a) due a simulation (predict) and compare the results with y_obs. If the values differ (even only slightly), tell me. Create the plots, ... -> everything should look like a perfect fit!
+# b) if a) did not show any differences conduct one full training and then look at the curves, etc. -> we still expect a good fit after training. 
+
+# 5. observable plot: 
+# bitte hier t_full deiner predict Funktion übergeben und das Ergebnis plotten, damit wir wirklich den Vergleich mit der Referenz haben (es kann sein, dass wir eine zu geringe Zeitauflösung haben, als das wir sonst besonders schöne Plots bekommen)
+# wir wollen hier also nicht die prediction auf den t_train Zeitpunkten 
+
+# 6. Analog für alle folgenden Evaluationen. Also diese Werte in der .csv Datei speichern, darauf den MSE berechnen, ...
+
 ############# Import Packages ###################
 using CSV, DataFrames
 using Lux
@@ -16,7 +36,7 @@ Random.seed!(rng, 1)
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
 
-const experiment_name = "27_07_23"
+const experiment_name = "03_08_23"
 
 const transform = "log";
 const param_range = (1e-5* (1-1e-6), 100000.0 * (1+1e-6));
@@ -71,11 +91,15 @@ else
     include("$(problem_name)/reference.jl")
 end
 
-#data_set="reference"
-
 # Define paths
 experiment_series_path, experiment_run_path, data_path, parameter_path = create_paths(problem_name, experiment_name, sampling_strategy, "$(par_row)", mechanistic_setting, dataset, "$(array_nr)")
 
+if array_nr == 1
+    open(joinpath(experiment_series_path, "summary.csv"), "a") do io
+        header = ["Problem name" "mechanistic setting" "Dataset" "Sampling strategy" "par row" "Array ID" "Epochs ADAM" "Epochs BFGS" "Learning rate ADAM" "Stepnorm BFGS" "λ_reg" "Activation function" "Hidden layers" "Hidden neurons" "Tolerance" " Mean MSE" "Mean nMSE" "Runtime" "Loss" "NegLL"]
+        writedlm(io, header, ",")
+    end
+end
 
 IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name, noise)
 
@@ -99,16 +123,14 @@ function predict(θ, X = IC, T = t; solver=solver, tolerance=tolerance, sense=se
                 sensealg = sense
                 ))
 end;
+
+l_mech = length(parameter_names)
+
 t1 = now()
-p_opt, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3 = train_lv(ps, st, lr_adam, λ_reg, stepnorm_bfgs, epochs, 12)
+p_opt, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3 = train_lv(ps, st, lr_adam, λ_reg, stepnorm_bfgs, epochs, l_mech)
 runtime = (now()-t1).value/1000/60
 t_plot = t_full
 pred = predict(p_opt, IC, t)
-
-#prediction plot
-#plt = plot(t, pred[1,:], label="u1", color=1)
-#plot!(t, pred[2,:], label="u2", color=2)
-#plot!(t, pred[3,:], label="u3", xlabel="time", color=3)
 
 
 ############### Evaluate Experiment ###################
@@ -153,8 +175,6 @@ obs_nMSE = nMSE(y_obs, pred)
 NegLL = nll(p_opt)
 
 open(joinpath(experiment_series_path, "summary.csv"), "a") do io
-    header = ["Problem name" "mechanistic setting" "Dataset" "Sampling strategy" "par row" "Array ID" "Epochs ADAM" "Epochs BFGS" "Learning rate ADAM" "Stepnorm BFGS" "λ_reg" "Activation function" "Hidden layers" "Hidden neurons" "Tolerance" " Mean MSE" "Mean nMSE" "Runtime" "Loss" "NegLL"]
-    writedlm(io, header, ",")
     loss = losses[end]
     writedlm(io, [problem_name mechanistic_setting dataset sampling_strategy par_row array_nr epochs[1] epochs[2] lr_adam stepnorm_bfgs λ_reg act_fct_name hidden_layers hidden_neurons tolerance mean(obs_MSE) mean(obs_nMSE) runtime loss NegLL], ",")    
 end
