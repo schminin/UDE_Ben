@@ -106,9 +106,9 @@ t_plot = t_full
 pred = predict(p_opt, IC, t)
 
 #prediction plot
-plt = plot(t, pred[1,:], label="u1", color=1)
-plot!(t, pred[2,:], label="u2", color=2)
-plot!(t, pred[3,:], label="u3", xlabel="time", color=3)
+#plt = plot(t, pred[1,:], label="u1", color=1)
+#plot!(t, pred[2,:], label="u2", color=2)
+#plot!(t, pred[3,:], label="u3", xlabel="time", color=3)
 
 
 ############### Evaluate Experiment ###################
