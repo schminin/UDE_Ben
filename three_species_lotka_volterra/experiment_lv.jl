@@ -1,7 +1,7 @@
 # todo:
-# 1. folder name should not end with .csv (see experiments 27_07_23)
+# 1. folder name should not end with .csv (see experiments 27_07_23) x
 
-# 2. initial value of noise should be std of training data for each species
+# 2. initial value of noise should be std of training data for each species x
 # - generally, how you implemented this is not flexible since once something changes about the naming this won't work anymore -> really, really never use a programming approach like this in big projects (best to try to avoid it in small ones, too)
 # - we also want a different noise for each species, since the noise of each species is different. Call the parameters n_u1, n_u2 and n_u3
 
@@ -12,7 +12,7 @@
 # a) due a simulation (predict) and compare the results with y_obs. If the values differ (even only slightly), tell me. Create the plots, ... -> everything should look like a perfect fit!
 # b) if a) did not show any differences conduct one full training and then look at the curves, etc. -> we still expect a good fit after training. 
 
-# 5. observable plot: 
+# 5. observable plot: x
 # bitte hier t_full deiner predict Funktion übergeben und das Ergebnis plotten, damit wir wirklich den Vergleich mit der Referenz haben (es kann sein, dass wir eine zu geringe Zeitauflösung haben, als das wir sonst besonders schöne Plots bekommen)
 # wir wollen hier also nicht die prediction auf den t_train Zeitpunkten 
 
@@ -43,7 +43,7 @@ const param_range = (1e-5* (1-1e-6), 100000.0 * (1+1e-6));
 
 const problem_name = "three_species_lotka_volterra"
 exp_sampling_strategy = ("no_sampling", )
-exp_mechanistic_setting = ("lv_missing_dynamics", )
+exp_mechanistic_setting = ("lv_fully_known", )
 
 const solver = KenCarp4()
 const sense = ForwardDiffSensitivity()
@@ -57,7 +57,7 @@ exp_hidden_neurons = 3#(4, 8, 16)
 exp_act_fct = ("tanh", ) # identity
 exp_tolerance = (1e-12, )
 exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try out
-exp_dataset = ("lotka_volterra_datapoints_40_noise_5.csv", )
+exp_dataset = ("lotka_volterra_datapoints_40_noise_5", )
 
 experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy,exp_dataset, exp_λ_reg, exp_lr_adam, 
     exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting));
@@ -71,21 +71,21 @@ end
 mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row = experiments[array_nr]
 exp_specifics = array_nr
 
-noise = parse(Int,chop(dataset, head = 35, tail = 4))
+#noise = parse(Int,chop(dataset, head = 35, tail = 4))
 
 
 ############# Prepare Experiment #######################
 # Load functinalities
 if test_setup
     epochs = (50, 20)
-    include("$(problem_name)/model/create_directories_lv.jl")
-    include("$(problem_name)/model/utils_lv.jl")
+    include("$(problem_name)/create_directories_lv.jl")
+    include("$(problem_name)/utils_lv.jl")
     include("$(problem_name)/reference.jl")
     include("$(problem_name)/model/$(mechanistic_setting).jl")
     include("$(problem_name)/model/nn_lv.jl")
 else
-    include("$(problem_name)/model/create_directories_lv.jl")
-    include("$(problem_name)/model/utils.jl")
+    include("$(problem_name)/create_directories_lv.jl")
+    include("$(problem_name)/utils.jl")
     include("$(problem_name)/model/$(mechanistic_setting).jl")
     include("$(problem_name)/model/nn_lv.jl")
     include("$(problem_name)/reference.jl")
@@ -101,7 +101,7 @@ if array_nr == 1
     end
 end
 
-IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name, noise)
+IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name)
 
 # create model 
 nn_model, ps, st = create_model(act_fct_name, hidden_layers, hidden_neurons, p_ph, n_out)
@@ -130,7 +130,7 @@ t1 = now()
 p_opt, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3 = train_lv(ps, st, lr_adam, λ_reg, stepnorm_bfgs, epochs, l_mech)
 runtime = (now()-t1).value/1000/60
 t_plot = t_full
-pred = predict(p_opt, IC, t)
+pred = predict(p_opt, IC, t_full)
 
 
 ############### Evaluate Experiment ###################
@@ -139,7 +139,7 @@ pred = predict(p_opt, IC, t)
 if create_plots
     plot_loss_trajectory(losses; path_to_store=experiment_run_path, return_plot=false)
     plot_regularization_loss_trajectory(losses_regularization; path_to_store=experiment_run_path, return_plot=false)
-    plot_observed_lv(t, pred, t_full, y_obs_full, t, y_obs, experiment_run_path, p_opt )
+    plot_observed_lv(t_full, pred, t_full, y_obs_full, t, y_obs, experiment_run_path, p_opt )
 end
 
 #store training results over epochs
@@ -164,7 +164,7 @@ store_parameters(experiment_run_path, pars, p_mech)
 open(joinpath(experiment_run_path, "predictions.csv"), "w") do io
     header = ["t" "u1" "u2" "u3"]
     writedlm(io, header, ",")
-    writedlm(io, [t pred[1,:] pred[2,:] pred[3,:]], ",")
+    writedlm(io, [t_full pred[1,:] pred[2,:] pred[3,:]], ",")
 end
 
 #hidden_MSE = MSE(y_hidden, pred)

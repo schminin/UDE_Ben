@@ -31,13 +31,13 @@ function create_paths(problem_name::String, experiment_name::String, sampling_st
         mkdir(exp_run_path)
     end
 
-    data_path = joinpath(pwd(), problem_name, "data", "$(dataset)")
+    data_path = joinpath(pwd(), problem_name, "data", "$(dataset).csv")
     parameter_path = joinpath(pwd(), problem_name, "experiments", sampling_strategy, "$(mechanistic_setting)_$(dataset)")
 
     return (experiment_series_path, exp_run_path, data_path, parameter_path)
 end
 
-function load_data(data_path::String,problem_name::String, noise::Int)
+function load_data(data_path::String,problem_name::String)
 
     # true data used for plotting
 
@@ -66,7 +66,8 @@ function load_data(data_path::String,problem_name::String, noise::Int)
 
     random_vec = rand(12)
 
-
+    #random setting
+    """
     p_ph =(; r1 = transform_par(random_vec[1]),
             a1_1 = transform_par(random_vec[2]), 
             a1_2 = transform_par(random_vec[3]),
@@ -79,9 +80,26 @@ function load_data(data_path::String,problem_name::String, noise::Int)
             a3_1 = transform_par(random_vec[10]),
             a3_2 = transform_par(random_vec[11]),
             a3_3 = transform_par(random_vec[12]),
-            var1 = noise,
-            var2 = noise,
-            var3 = noise)
+            n_u1 = std(y_obs_full[1,int(t[1]):int(t[end])]),
+            n_u2 = std(y_obs_full[2,int(t[1]):int(t[end])]),
+            n_u3 = std(y_obs_full[3,int(t[1]):int(t[end])]))
+    """
+    #true value setting
+    p_ph =(; r1 = transform_par(p_true[1]),
+            a1_1 = transform_par(p_true[2]), 
+            a1_2 = transform_par(p_true[3]),
+            a1_3 = transform_par(p_true[4]),
+            r2 = transform_par(p_true[5]),
+            a2_1 = transform_par(p_true[6]),
+            a2_2 = transform_par(p_true[7]),
+            a2_3 = transform_par(p_true[8]),
+            r3 = transform_par(p_true[9]),
+            a3_1 = transform_par(p_true[10]),
+            a3_2 = transform_par(p_true[11]),
+            a3_3 = transform_par(p_true[12]),
+            n_u1 = std(y_obs_full[1,:]),
+            n_u2 = std(y_obs_full[2,:]),
+            n_u3 = std(y_obs_full[3,:]))
 
     # data used for training
     df =CSV.read(data_path, DataFrame, delim = ",")

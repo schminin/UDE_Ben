@@ -69,7 +69,7 @@ function nll(θ, IC::Vector{Float64}=IC, solver=solver, t::Vector{Float64}=t, y_
     if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
         @inbounds X̂ = Array(tmp_sol)
         #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
-        log_sigma_sq = [θ.var1, θ.var2, θ.var3]
+        log_sigma_sq = [θ.n_u1, θ.n_u2, θ.n_u3]
         lc_1 = size(y_obs)[2]/2 * log_sigma_sq
         lc_2 = sum(abs2, X̂ .- y_obs, dims=2) ./ exp.(log_sigma_sq)*0.5
         return sum(lc_1+lc_2)  
@@ -217,9 +217,9 @@ function plot_hidden_boehm(t_plot::Vector{Float64}, pred::Matrix{Float64}, t_ful
 end
 
 function plot_observed_lv(t_plot::Vector{Float64}, pred_obs::Matrix{Float64}, t_full::Vector{Float64}, y_obs_full::Matrix{Float64}, t::Vector{Float64}, y_obs::Matrix{Float64}, path_to_store::String, ps::ComponentVector)
-    p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.var1)), return_plot=true, plot_observed=true, plot_noise=true)
-    p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.var2)), return_plot=true, plot_observed=true, plot_noise=true)
-    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; std=sqrt.(exp.(ps.var3)), return_plot=true, plot_observed=true, plot_noise=true)
+    p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.n_u1)), return_plot=true, plot_observed=true, plot_noise=true)
+    p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.n_u2)), return_plot=true, plot_observed=true, plot_noise=true)
+    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; std=sqrt.(exp.(ps.n_u3)), return_plot=true, plot_observed=true, plot_noise=true)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_with_noise.png"))
     
