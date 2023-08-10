@@ -36,7 +36,7 @@ Random.seed!(rng, 1)
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
 
-const experiment_name = "03_08_23"
+const experiment_name = "10_08_23"
 
 const transform = "log";
 const param_range = (1e-5* (1-1e-6), 100000.0 * (1+1e-6));
@@ -57,7 +57,7 @@ exp_hidden_neurons = 3#(4, 8, 16)
 exp_act_fct = ("tanh", ) # identity
 exp_tolerance = (1e-12, )
 exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try out
-exp_dataset = ("lotka_volterra_datapoints_40_noise_5", )
+exp_dataset = ("lotka_volterra_datapoints_80_noise_5", )
 
 experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy,exp_dataset, exp_λ_reg, exp_lr_adam, 
     exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting));
@@ -77,7 +77,7 @@ exp_specifics = array_nr
 ############# Prepare Experiment #######################
 # Load functinalities
 if test_setup
-    epochs = (50, 20)
+    epochs = (500, 200)
     include("$(problem_name)/create_directories_lv.jl")
     include("$(problem_name)/utils_lv.jl")
     include("$(problem_name)/reference.jl")
@@ -169,8 +169,8 @@ end
 
 #hidden_MSE = MSE(y_hidden, pred)
 #hidden_nMSE = nMSE(y_hidden, pred)
-obs_MSE = MSE(y_obs, pred)
-obs_nMSE = nMSE(y_obs, pred)
+obs_MSE = MSE(y_obs_full, pred)
+obs_nMSE = nMSE(y_obs_full, pred)
 
 NegLL = nll(p_opt)
 
