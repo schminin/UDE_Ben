@@ -1,23 +1,3 @@
-# todo:
-# 1. folder name should not end with .csv (see experiments 27_07_23) x
-
-# 2. initial value of noise should be std of training data for each species x
-# - generally, how you implemented this is not flexible since once something changes about the naming this won't work anymore -> really, really never use a programming approach like this in big projects (best to try to avoid it in small ones, too)
-# - we also want a different noise for each species, since the noise of each species is different. Call the parameters n_u1, n_u2 and n_u3
-
-# 3. I've changed the file locations to the way it was originally intended and is in Boehm (if you don't understand why, I can explain it to you next time we talk) -> adapt possible links from one file to the other s.t. everything works again
-#  
-
-# 4. test the setting while using the true mechanistic parameters (i.e. not random ones). This means: setting the parameters, loading and defining the model. Then:
-# a) due a simulation (predict) and compare the results with y_obs. If the values differ (even only slightly), tell me. Create the plots, ... -> everything should look like a perfect fit!
-# b) if a) did not show any differences conduct one full training and then look at the curves, etc. -> we still expect a good fit after training. 
-
-# 5. observable plot: x
-# bitte hier t_full deiner predict Funktion übergeben und das Ergebnis plotten, damit wir wirklich den Vergleich mit der Referenz haben (es kann sein, dass wir eine zu geringe Zeitauflösung haben, als das wir sonst besonders schöne Plots bekommen)
-# wir wollen hier also nicht die prediction auf den t_train Zeitpunkten 
-
-# 6. Analog für alle folgenden Evaluationen. Also diese Werte in der .csv Datei speichern, darauf den MSE berechnen, ...
-
 ############# Import Packages ###################
 using CSV, DataFrames
 using Lux
@@ -26,36 +6,32 @@ using ComponentArrays, SciMLSensitivity, NNlib, Optimisers, OrdinaryDiffEq, Rand
 using Plots, Measures
 using Random
 using Dates
+using DifferentialEquations
 using Optimization, OptimizationOptimisers, OptimizationOptimJL
 using Serialization
 using ChainRulesCore
-using ForwardDiff
+using Zygote
 rng = Random.default_rng()
 Random.seed!(rng, 1)
 
-const test_setup = true  # if used on the cluster this has to be set to false
+const test_setup = false  # if used on the cluster this has to be set to false
 const create_plots = true
 
-const experiment_name = "10_08_23"
+const experiment_name = "11_08_23"
 
 const transform = "log";
-const param_range = (1e-5* (1-1e-6), 100000.0 * (1+1e-6));
 
 const problem_name = "three_species_lotka_volterra"
 exp_sampling_strategy = ("no_sampling", )
-exp_mechanistic_setting = ("lv_fully_known", )
+exp_mechanistic_setting = ("lv_missing_dynamics", )
 
-const solver = KenCarp4()
-const sense = ForwardDiffSensitivity()
-tolerance = (1e-12, )
-
-exp_λ_reg = (1e4, 1e3, 1e2, 1.0, 1e-2, 1e-3, )
-epochs = (500, 300) # (epochs_adam, epochs_bfgs)
+exp_λ_reg = (1e2, 1.0, 1e-2, 1e-3, )
+epochs = (500, 1000) # (epochs_adam, epochs_bfgs)
 exp_lr_adam = (1e-4, 1e-3, 1e-2, 1e-1) # lr_bfgs = 0.1*lr_adam
-exp_hidden_layers = 5#(1, 2, 3, )
-exp_hidden_neurons = 3#(4, 8, 16)
-exp_act_fct = ("tanh", ) # identity
-exp_tolerance = (1e-12, )
+exp_hidden_layers = (1, 2, 3, )
+exp_hidden_neurons = (4, 8, )
+exp_act_fct = ("tanh", "rbf", "gelu", ) 
+exp_tolerance = (1e-8, 1e-12, )
 exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try out
 exp_dataset = ("lotka_volterra_datapoints_80_noise_5", )
 
@@ -71,13 +47,10 @@ end
 mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row = experiments[array_nr]
 exp_specifics = array_nr
 
-#noise = parse(Int,chop(dataset, head = 35, tail = 4))
-
-
 ############# Prepare Experiment #######################
 # Load functinalities
 if test_setup
-    epochs = (500, 200)
+    epochs = (50, 10)
     include("$(problem_name)/create_directories_lv.jl")
     include("$(problem_name)/utils_lv.jl")
     include("$(problem_name)/reference.jl")
@@ -96,7 +69,7 @@ experiment_series_path, experiment_run_path, data_path, parameter_path = create_
 
 if array_nr == 1
     open(joinpath(experiment_series_path, "summary.csv"), "a") do io
-        header = ["Problem name" "mechanistic setting" "Dataset" "Sampling strategy" "par row" "Array ID" "Epochs ADAM" "Epochs BFGS" "Learning rate ADAM" "Stepnorm BFGS" "λ_reg" "Activation function" "Hidden layers" "Hidden neurons" "Tolerance" " Mean MSE" "Mean nMSE" "Runtime" "Loss" "NegLL"]
+        header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" " MSE" "nMSE" "runtime" "loss" "negLL"]
         writedlm(io, header, ",")
     end
 end
@@ -116,11 +89,10 @@ prob_nn = ODEProblem(dynamics!, IC, tspan, ps);
 stepnorm_bfgs = 0.1*lr_adam
 
 # Define a predictor
-function predict(θ, X = IC, T = t; solver=solver, tolerance=tolerance, sense=sense, prob_nn=prob_nn)
+function predict(θ, X = IC, T = t; tolerance=tolerance, prob_nn=prob_nn)
     _prob = remake(prob_nn, u0 = X, tspan = (T[1], T[end]), p = θ)  # update ODE Problem with nn parameters
-    Array(solve(_prob, solver, saveat = T,
-                abstol=tolerance, reltol=tolerance,
-                sensealg = sense
+    Array(solve(_prob, saveat = T,
+                abstol=tolerance, reltol=tolerance
                 ))
 end;
 
@@ -155,7 +127,11 @@ end
 # store final values of all mechanistic parameters to csv
 pars = vcat(parameter_names)
 p_mech = convert(Vector{Union{Missing,Float64}}, p_opt[1:length(pars)])
-
+if mechanistic_setting == "lv_missing_dynamics"
+    p_mech[1] = missing
+    p_mech[5] = missing
+    p_mech[9] = missing
+end
 #store parameters
 store_parameters(experiment_run_path, pars, p_mech)
 

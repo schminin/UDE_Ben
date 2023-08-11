@@ -12,7 +12,7 @@ Given parameters in the untransformed space, transform them to the transformed s
                 - "log": log transform without bounds
                 - "identity": no transform
 """
-function transform_par(par; lb::Float64 = param_range[1], ub::Float64 = param_range[2], transform=transform::String)
+function transform_par(par; lb::Float64 = 1e-5* (1-1e-6), ub::Float64 = 100000.0 * (1+1e-6), transform=transform::String)
     if transform == "tanh_bounds"
         return atanh(2*(par-lb)/(ub-lb)-1) + 5.74
     elseif transform == "log"
@@ -34,7 +34,7 @@ Given parameters in the transformed space, transform them back to the parameter'
                 - "log": log transform without bounds
                 - "identity": no transform
 """
-function inverse_transform(par, lb::Float64 = param_range[1], ub::Float64 = param_range[2], transform = transform::String)
+function inverse_transform(par, lb::Float64 = 1e-5* (1-1e-6), ub::Float64 = 100000.0 * (1+1e-6), transform = transform::String)
     if transform == "tanh_bounds"
         return lb + (Lux.tanh(par-5.74) + 1)/2*(ub-lb)
     elseif transform == "log"
@@ -58,13 +58,12 @@ Calculates the loss based on the model's predictions of observed states only (i.
                     if true: loss is equivalent to negative log likelihood
                     if false: loss is equivalent to the squared error
 """
-function nll(θ, IC::Vector{Float64}=IC, solver=solver, t::Vector{Float64}=t, y_obs::Matrix{Float64}=y_obs; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
+function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, y_obs::Matrix{Float64}=y_obs; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
     l = convert(eltype(θ), 0)
     # solve ODE
     _prob = remake(prob_nn, u0 = IC, tspan = (t[1], t[end]), p = θ)  # update ODE Problem with nn parameters
-    tmp_sol = solve(_prob, solver, saveat = t,
-                abstol=tolerance, reltol=tolerance,
-                sensealg = sense
+    tmp_sol = solve(_prob, saveat = t,
+                abstol=tolerance, reltol=tolerance
                 )
     if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
         @inbounds X̂ = Array(tmp_sol)
@@ -126,14 +125,14 @@ function train_lv(p::ComponentVector, st::NamedTuple, lr_adam::Float64, λ_reg::
 
     # First train with ADAM for better convergence -> move the parameters into a
     # favourable starting positing for BFGS
-    adtype = Optimization.AutoForwardDiff();
+    adtype = Optimization.AutoZygote();
     optf = Optimization.OptimizationFunction((x,p)->loss(x), adtype); # x: state variables, p: hyperparameters
     optprob = Optimization.OptimizationProblem(optf, p);
     res1 = Optimization.solve(optprob, ADAM(lr_adam), callback=callback, maxiters = epochs[1])
     println("Final training loss after $(length(losses)) iterations: $(losses[end])")
 
     optprob2 = Optimization.OptimizationProblem(optf, res1.minimizer);
-    res2 = Optimization.solve(optprob2, Optim.BFGS(initial_stepnorm=stepnorm_bfgs), callback=callback, maxiters = epochs[2])
+    res2 = Optimization.solve(optprob2, Optim.BFGS(initial_stepnorm=stepnorm_bfgs), callback=callback, maxiters = epochs[2], time_limit=86400)
     println("Training loss after $(length(losses)) iterations: $(losses[end])")
 
     return res2.u, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3
