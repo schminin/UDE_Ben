@@ -14,14 +14,15 @@ using Zygote
 rng = Random.default_rng()
 Random.seed!(rng, 1)
 
+
+############# Experimental Settings ###################
+const experiment_name = "11_08_23"
+
 const test_setup = false  # if used on the cluster this has to be set to false
 const create_plots = true
 
-const experiment_name = "11_08_23"
-
-const transform = "log";
-
 const problem_name = "three_species_lotka_volterra"
+const transform = "log";
 exp_sampling_strategy = ("no_sampling", )
 exp_mechanistic_setting = ("lv_missing_dynamics", )
 
