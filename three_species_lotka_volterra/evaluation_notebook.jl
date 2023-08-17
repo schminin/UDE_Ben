@@ -141,7 +141,7 @@ begin
 		chosen = "b"
 	else chosen = "c"
 	end
-	p1 = Plot(df_plot, x=:a, y=Symbol(chosen), color=:e, kind="bar", Layout(barmode="stack", width=700, height=300, xaxis_title_text="$x_axis",yaxis_title_text="$success"),labels=attr(e=" "))
+	p1 = Plot(df_plot, x=:a, y=Symbol(chosen), color=:e, kind="bar", Layout(barmode="stack", width=700, height=300, xaxis_title_text="$x_axis",yaxis_title_text="$success", title_text="Barplot of successes of experiments"),labels=attr(e=" "))
 end
 
 # ╔═╡ 355be408-3796-4e3d-99f9-abbf05b3401e
@@ -191,8 +191,8 @@ Plots.heatmap(
     y_heat,
 	x_heat,
     z1,
-	xlabel="$Parameter1",
-	ylabel="$Parameter2",
+	xlabel="$Parameter2",
+	ylabel="$Parameter1",
 	colorbar_title="$Parameter3",
     type="heatmap",
     colorscale="Viridis",
@@ -1481,6 +1481,6 @@ version = "1.4.1+0"
 # ╟─7d8eaf3c-f447-4ed9-93cb-7d4fb3093b59
 # ╟─e8644c68-edb4-4fce-aa1a-2c8a50380110
 # ╟─db1accb9-e51a-483e-8d4a-4ea690614db9
-# ╟─86cbc16b-6c39-4502-a4bc-6c4ffa557b39
+# ╠═86cbc16b-6c39-4502-a4bc-6c4ffa557b39
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
