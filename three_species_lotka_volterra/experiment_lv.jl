@@ -70,7 +70,7 @@ experiment_series_path, experiment_run_path, data_path, parameter_path = create_
 
 if array_nr == 1
     open(joinpath(experiment_series_path, "summary.csv"), "a") do io
-        header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" " MSE" "nMSE" "runtime" "loss" "negLL"]
+        header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" "MSE" "nMSE" "runtime" "loss" "negLL"]
         writedlm(io, header, ",")
     end
 end
