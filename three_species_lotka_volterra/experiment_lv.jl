@@ -28,7 +28,7 @@ exp_sampling_strategy = ("no_sampling", )
 exp_mechanistic_setting = ("lv_missing_dynamics", )
 
 exp_λ_reg = (5e-3, )
-epochs = (500, 1000) # (epochs_adam, epochs_bfgs)
+epochs = (500, 1200) # (epochs_adam, epochs_bfgs)
 exp_lr_adam = (1e-2, ) # lr_bfgs = 0.1*lr_adam
 exp_hidden_layers = (1, )
 exp_hidden_neurons = (4, 8, )
