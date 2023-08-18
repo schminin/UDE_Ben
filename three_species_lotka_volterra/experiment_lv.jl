@@ -59,11 +59,11 @@ if test_setup
     include("$(problem_name)/model/$(mechanistic_setting).jl")
     include("$(problem_name)/model/nn_lv.jl")
 else
-    include("$(problem_name)/create_directories_lv.jl")
-    include("$(problem_name)/utils.jl")
-    include("$(problem_name)/model/$(mechanistic_setting).jl")
-    include("$(problem_name)/model/nn_lv.jl")
-    include("$(problem_name)/reference.jl")
+    include("create_directories_lv.jl")
+    include("utils_lv.jl")
+    include("model/$(mechanistic_setting).jl")
+    include("model/nn_lv.jl")
+    include("reference.jl")
 end
 
 # Define paths
