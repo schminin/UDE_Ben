@@ -78,6 +78,7 @@ if array_nr == 1
         "sampling_strategy", exp_sampling_strategy,
         "mechanistic_setting", exp_mechanistic_setting,
         "λ_reg", exp_λ_reg,
+        "lr_adam", exp_lr_adam,
         "hidden_layer", exp_hidden_layers,
         "hidden_neurons", exp_hidden_neurons,
         "act_fct", exp_act_fct,
