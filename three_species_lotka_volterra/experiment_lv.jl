@@ -17,11 +17,11 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "11_08_23"
+const experiment_name = "24_08_23_test3"
 
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
-
+one_observable = true
 const problem_name = "three_species_lotka_volterra"
 const transform = "log";
 exp_sampling_strategy = ("no_sampling", )

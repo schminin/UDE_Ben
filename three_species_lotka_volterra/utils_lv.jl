@@ -65,15 +65,28 @@ function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{F
     tmp_sol = solve(_prob, saveat = t,
                 abstol=tolerance, reltol=tolerance
                 )
-    if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
-        @inbounds X̂ = Array(tmp_sol)
-        #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
-        log_sigma_sq = [θ.n_u3]
-        lc_1 = size(y_obs[3,1:length(t_train)])[1]/2 * log_sigma_sq
-        lc_2 = sum(abs2, X̂[3,1:length(t_train)] .- y_obs[3,1:length(t_train)], dims=1) ./ exp.(log_sigma_sq)*0.5
-        return sum(lc_1+lc_2)  
-    else
-        return Inf
+    if one_observable   #only one observable (u3)
+        if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
+            @inbounds X̂ = Array(tmp_sol)
+            #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
+            log_sigma_sq = [θ.n_u3]
+            lc_1 = size(y_obs[3,1:length(t_train)])[1]/2 * log_sigma_sq
+            lc_2 = sum(abs2, X̂[3,1:length(t_train)] .- y_obs[3,1:length(t_train)], dims=1) ./ exp.(log_sigma_sq)*0.5
+            return sum(lc_1+lc_2)  
+        else
+            return Inf
+        end
+    else #all states observed
+        if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
+            @inbounds X̂ = Array(tmp_sol)
+            #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
+            log_sigma_sq = [θ.n_u1, θ.n_u2, θ.n_u3]
+            lc_1 = size(y_obs[:,1:length(t_train)])[2]/2 * log_sigma_sq
+            lc_2 = sum(abs2, X̂[:,1:length(t_train)] .- y_obs[:,1:length(t_train)], dims=2) ./ exp.(log_sigma_sq)*0.5
+            return sum(lc_1+lc_2)  
+        else
+            return Inf
+        end
     end
 end;
 
@@ -85,15 +98,28 @@ function val_loss(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t_val, t_train:
     tmp_sol = solve(val_prob, saveat = t,
                 abstol=tolerance, reltol=tolerance
                 )
-    if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
-        @inbounds X̂ = Array(tmp_sol)
-        #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
-        log_sigma_sq = [θ.n_u3]
-        vlc_1 = size(y_obs[3,t_val_start:end])[1]/2 * log_sigma_sq
-        vlc_2 = sum(abs2, X̂[3,t_val_start:end] .- y_obs[3,t_val_start:end], dims=1) ./ exp.(log_sigma_sq)*0.5
-        return sum(vlc_1+vlc_2)  
-    else
-        return Inf
+    if one_observable #only u3 observed
+        if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
+            @inbounds X̂ = Array(tmp_sol)
+            #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
+            log_sigma_sq = [θ.n_u3]
+            vlc_1 = size(y_obs[3,t_val_start:end])[1]/2 * log_sigma_sq
+            vlc_2 = sum(abs2, X̂[3,t_val_start:end] .- y_obs[3,t_val_start:end], dims=1) ./ exp.(log_sigma_sq)*0.5
+            return sum(vlc_1+vlc_2)  
+        else
+            return Inf
+        end
+    else    #all states observed
+        if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
+            @inbounds X̂ = Array(tmp_sol)
+            #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
+            log_sigma_sq = [θ.n_u1, θ.n_u2, θ.n_u3]
+            vlc_1 = size(y_obs[:,t_val_start:end])[2]/2 * log_sigma_sq
+            vlc_2 = sum(abs2, X̂[:,t_val_start:end] .- y_obs[:,t_val_start:end], dims=2) ./ exp.(log_sigma_sq)*0.5
+            return sum(vlc_1+vlc_2)  
+        else
+            return Inf
+        end
     end
 end;
 
