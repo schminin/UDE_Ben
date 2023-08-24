@@ -11,12 +11,13 @@ using Optimization, OptimizationOptimisers, OptimizationOptimJL
 using Serialization
 using ChainRulesCore
 using Zygote
+using JLD, JLD2
 rng = Random.default_rng()
 Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "24_08_23_test2"
+const experiment_name = "11_08_23"
 
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
@@ -27,14 +28,14 @@ exp_sampling_strategy = ("no_sampling", )
 exp_mechanistic_setting = ("lv_missing_dynamics", )
 
 exp_λ_reg = (1e2, 1.0, 1e-2, 1e-3, )
-epochs = (500, 100) # (epochs_adam, epochs_bfgs)
+epochs = (500, 1000) # (epochs_adam, epochs_bfgs)
 exp_lr_adam = (1e-4, 1e-3, 1e-2, 1e-1) # lr_bfgs = 0.1*lr_adam
 exp_hidden_layers = (1, 2, 3, )
 exp_hidden_neurons = (4, 8, )
-exp_act_fct = ("tanh", "rbf", "gelu", ) 
-exp_tolerance = (1e-8, 1e-12, )
+exp_act_fct = ("tanh", ) 
+exp_tolerance = (1e-8, )
 exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try out
-exp_dataset = ("lotka_volterra_datapoints_80_noise_5", )
+exp_dataset = ("lotka_volterra_datapoints_80_noise_5", "lotka_volterra_datapoints_80_noise_15", "lotka_volterra_datapoints_40_noise_5", "lotka_volterra_datapoints_40_noise_15")
 
 experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy,exp_dataset, exp_λ_reg, exp_lr_adam, 
     exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting));
@@ -58,11 +59,11 @@ if test_setup
     include("$(problem_name)/model/$(mechanistic_setting).jl")
     include("$(problem_name)/model/nn_lv.jl")
 else
-    include("$(problem_name)/create_directories_lv.jl")
-    include("$(problem_name)/utils.jl")
-    include("$(problem_name)/model/$(mechanistic_setting).jl")
-    include("$(problem_name)/model/nn_lv.jl")
-    include("$(problem_name)/reference.jl")
+    include("create_directories_lv.jl")
+    include("utils_lv.jl")
+    include("model/$(mechanistic_setting).jl")
+    include("model/nn_lv.jl")
+    include("reference.jl")
 end
 
 # Define paths
@@ -73,6 +74,18 @@ if array_nr == 1
         header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" "MSE" "nMSE" "runtime" "loss" "negLL" "validation_loss"]
         writedlm(io, header, ",")
     end
+    save(joinpath(experiment_series_path, "hp_settings.jld"), 
+        "sampling_strategy", exp_sampling_strategy,
+        "mechanistic_setting", exp_mechanistic_setting,
+        "λ_reg", exp_λ_reg,
+        "lr_adam", exp_lr_adam,
+        "hidden_layer", exp_hidden_layers,
+        "hidden_neurons", exp_hidden_neurons,
+        "act_fct", exp_act_fct,
+        "tolerance", exp_tolerance,
+        "par_setting", exp_par_setting,
+        "dataset", exp_dataset)
+    # hp_settings = load(joinpath(experiment_series_path, "hp_settings.jld"))
 end
 
 IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name)

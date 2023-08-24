@@ -1,2 +1,4 @@
 .vscode/*
 three_species_lotka_volterra/experiments/tests/*
+three_species_lotka_volterra/experiments/*/log/*
+three_species_lotka_volterra/experiments/*/lv_missing_dynamics_lotka_volterra_datapoints_80_noise_5/*
