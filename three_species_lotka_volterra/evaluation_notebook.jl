@@ -24,6 +24,7 @@ begin
 	using PlotlyJS
 	using WebIO
 	using Statistics
+	using JLD
 end
 
 # ╔═╡ 32dffc0f-76ab-4b11-99ca-bf92e57baf3e
@@ -43,20 +44,39 @@ Insert experiment name
 """
 
 # ╔═╡ 3d1f5a9a-b697-4179-8ef9-092dfcc24e90
-@bind experiment_name TextField(; default="11_08_23")
+@bind experiment_name TextField(; default="18_08_23")
 
 # ╔═╡ a057a28e-5863-4b02-8e3a-2a7f0ab3c699
-hp_nr = 576
+begin 
+	hp_settings = load("experiments/$experiment_name/hp_settings.jld")
+	#count the hp settings
+	λ_reg_count = length(get(hp_settings,"λ_reg",42))
+	lr_adam_count = length(get(hp_settings,"lr_adam",42))
+	hidden_layers_count = length(get(hp_settings,"hidden_layer",42))
+	hidden_neurons_count = length(get(hp_settings,"hidden_neurons",42))
+	act_fct_name_count = length(get(hp_settings,"act_fct",42))
+	tolerance_count= length(get(hp_settings,"tolerance",42))
+	par_setting_count = length(get(hp_settings,"par_setting",42))
+	dataset_count = length(get(hp_settings,"dataset",42))
+	mechanistic_setting_count = length(get(hp_settings,"mechanistic_setting",42))
+	sampling_strategy_count = length(get(hp_settings,"sampling_strategy",42))
+	#calculate the total number of experiments done
+	exp_count = tolerance_count*hidden_neurons_count*hidden_layers_count*lr_adam_count*λ_reg_count*act_fct_name_count*par_setting_count*dataset_count
+end;
+
+# ╔═╡ 3e54ca9a-a13c-45a4-90da-8a4d740c8c14
+exp_count
 
 # ╔═╡ 0e640d35-321c-47f0-8b0e-2eaf302cf86c
 # Load the summary.csv file
 begin
 	df = CSV.read("experiments/$experiment_name/summary.csv", DataFrame);
 	names(df)
+	
 end;
 
 # ╔═╡ 8b5085e0-e4ac-41f3-b292-19ba6f436428
-"Fraction of successful experiments: $(nrow(df)/hp_nr)"
+"Fraction of successful experiments: $(nrow(df)/exp_count)"
 
 
 # ╔═╡ e28f9f98-576d-4ee9-894c-b557b7257f04
@@ -78,7 +98,7 @@ md"""
 x_options = names(df)[2:end-6]
 
 # ╔═╡ 5edd4733-f3c6-40ee-b263-abda5a4117ee
-y_options = names(df)[end-5:end]
+y_options = names(df)[end-6:end]
 
 # ╔═╡ 298c3a08-4b39-47ef-9efc-12c13942ef18
 @bind x_axis Select(x_options; default="λ_reg")
@@ -100,48 +120,35 @@ end
 # ╔═╡ 8a4459bb-8346-4dcb-ac89-504365777225
 md""" ### Barplot Successes"""
 
-# ╔═╡ d219b11b-d84e-4c78-ad12-3069135075a4
+# ╔═╡ fbe2bff7-cff9-4aac-bf65-33b052189641
+eval(Symbol(x_axis*"_count"))
 
-
-# ╔═╡ 4c63527b-fe29-4e00-b7f8-0b4624ff3b75
-begin
-	hyperparam = []
-	# unique hp setting of selected group
-	groups = groupby(df[!, [x_axis]], x)
-	grlen = length(groups)
-	# expected number of experiments per group
-	totalexp_group = hp_nr/grlen
-	succ_specific_perc = Array{Float64}(undef, grlen)
-	succ_specific_abs = Array{Float64}(undef, grlen)
-	for i in 1:grlen
-		value = groups[i][!,x][1]
-		hyperparam = append!(hyperparam, [value])
-		succ_specific_perc[i] = nrow(groups[i])/totalexp_group
-		succ_specific_abs[i] = nrow(groups[i])
-	end
-	
-end
-
-# ╔═╡ 85f850d3-590d-44e3-9604-3c6234680e5c
-begin
-	df_plot = DataFrame(a=hyperparam, b=succ_specific_perc, c=succ_specific_abs, d=repeat([totalexp_group],Int(grlen)), e=repeat(["Success"],Int(grlen)))
-	df_plot2 = copy(df_plot)
-	df_plot2.e = repeat(["Failure"],grlen)
-	df_plot2.b = 1 .- df_plot2.b
-	df_plot2.c = df_plot2.d .- df_plot2.c
-	append!(df_plot, df_plot2);
+# ╔═╡ b76b87e4-b98c-4bec-a4ab-79cbaefe9cfc
+begin 
+	hp_count = eval(Symbol(x_axis*"_count"))
+	hp_exp = (exp_count/hp_count)
+	df_res = combine(groupby(df, x_axis), nrow)
+	df_res = rename(df_res, :nrow => :success)
+	df_res[!, "failure"] = hp_exp .- df_res[!,"success"] 
+	df_res[!,"success_prob"] = df_res[!,"success"] ./ hp_exp
+	df_res[!, "failure_prob"] = 1 .- df_res[!,"success_prob"] 
+	#df_res = rename(stack(df_res, [2,3]), :variable => :case, :value => :absolute)
+	#df_res = rename(stack(df_res, [2,3], [1, 4]), :variable => :case2, :value => :fraction)
+	df_sub = df_res[!, [Symbol(x_axis), :success, :success_prob]]
+	df_sub[!, "value"] = repeat(["success"], hp_count)
+	df_sub = rename(df_sub, :success => :absolute, :success_prob => :relative)
+	df_sub2 = df_res[!, [Symbol(x_axis), :failure, :failure_prob]]
+	df_sub2[!, "value"] = repeat(["failure"], hp_count)
+	df_sub2 = rename(df_sub2, :failure => :absolute, :failure_prob => :relative)
+	df_sub = vcat(df_sub, df_sub2)
 end
 
 # ╔═╡ 0d8cde03-69d7-490c-af12-e03d572d7281
-@bind success Select(["Percentage","Absolute"])
+@bind success Select(["absolute","relative"])
 
 # ╔═╡ b3f29e9a-2428-4f66-9f63-51528c6d984c
 begin
-	if success == "Percentage"
-		chosen = "b"
-	else chosen = "c"
-	end
-	p1 = Plot(df_plot, x=:a, y=Symbol(chosen), color=:e, kind="bar", Layout(barmode="stack", width=700, height=300, xaxis_title_text="$x_axis",yaxis_title_text="$success", title_text="Barplot of successes of experiments"),labels=attr(e=" "))
+	p1 = Plot(df_sub, x=Symbol(x_axis), y=Symbol(success), color=:value, kind="bar", Layout(barmode="stack", width=600, height=300, xaxis_title_text="$x_axis",yaxis_title_text="$success", title_text="Barplot of successful experiments"),labels=attr(e=" "))
 end
 
 # ╔═╡ 355be408-3796-4e3d-99f9-abbf05b3401e
@@ -177,14 +184,13 @@ end
 begin
 	x_heat = Parameter_3[!,Symbol(Parameter1)]
 	y_heat = names(Parameter_3)[2:end]
-end
+end;
 
 # ╔═╡ 13eeffed-26a0-4daa-b20d-895c48a087bc
 begin
 	y1=names(Parameter_3)[2:end]
 	z1 = Array(Parameter_3[!,y1])
-end
-
+end;
 
 # ╔═╡ 86cbc16b-6c39-4502-a4bc-6c4ffa557b39
 Plots.heatmap(
@@ -196,8 +202,8 @@ Plots.heatmap(
 	colorbar_title="$Parameter3",
     type="heatmap",
     colorscale="Viridis",
-	title="Comparison $Parameter1 and $Parameter2 on $Parameter3",
-	titlefontsize=15
+	#title="Comparison $Parameter1 and $Parameter2 on $Parameter3",
+	#titlefontsize=10
 )
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -205,6 +211,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
 PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
@@ -214,6 +221,7 @@ WebIO = "0f1e0344-ec1d-5b48-a673-e5cf874b6c29"
 [compat]
 CSV = "~0.10.11"
 DataFrames = "~1.6.1"
+JLD = "~0.13.3"
 PlotlyJS = "~0.18.10"
 Plots = "~1.38.17"
 PlutoUI = "~0.7.52"
@@ -226,7 +234,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "24dd7bea03ff0338b9ddca3be93b0f0256cff9fa"
+project_hash = "09761feeb1b2b532c9c6908bb993f4e65eef4a29"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -260,6 +268,18 @@ deps = ["Base64", "Distributed", "HTTP", "JSExpr", "JSON", "Lazy", "Logging", "M
 git-tree-sha1 = "b1c61fd7e757c7e5ca6521ef41df8d929f41e3af"
 uuid = "ad839575-38b3-5650-b840-f874b8c74a25"
 version = "0.12.8"
+
+[[deps.Blosc]]
+deps = ["Blosc_jll"]
+git-tree-sha1 = "310b77648d38c223d947ff3f50f511d08690b8d5"
+uuid = "a74b3585-a348-5f62-a45c-50e91977d574"
+version = "0.7.3"
+
+[[deps.Blosc_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Lz4_jll", "Zlib_jll", "Zstd_jll"]
+git-tree-sha1 = "6aa2d0b8db41ab860bbbf61b9587e3b957683fd3"
+uuid = "0b7ba130-8d10-5ba8-a3d6-c5182647fed9"
+version = "1.21.4+0"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -417,6 +437,12 @@ git-tree-sha1 = "74faea50c1d007c85837327f6775bea60b5492dd"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.2+2"
 
+[[deps.FileIO]]
+deps = ["Pkg", "Requires", "UUIDs"]
+git-tree-sha1 = "299dc33549f68299137e51e6d49a13b5b1da9673"
+uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+version = "1.16.1"
+
 [[deps.FilePathsBase]]
 deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "e27c4ebe80e8699540f2d6c805cc12203b614f12"
@@ -507,6 +533,24 @@ git-tree-sha1 = "53bb909d1151e57e2484c3d1b53e19552b887fb2"
 uuid = "42e2da0e-8278-4e71-bc24-59509adca0fe"
 version = "1.0.2"
 
+[[deps.H5Zblosc]]
+deps = ["Blosc", "HDF5"]
+git-tree-sha1 = "d3966da25e48c05c31cd9786fd201627877612a2"
+uuid = "c8ec2601-a99c-407f-b158-e79c03c2f5f7"
+version = "0.1.1"
+
+[[deps.HDF5]]
+deps = ["Compat", "HDF5_jll", "Libdl", "Mmap", "Random", "Requires", "UUIDs"]
+git-tree-sha1 = "c73fdc3d9da7700691848b78c61841274076932a"
+uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+version = "0.16.15"
+
+[[deps.HDF5_jll]]
+deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "OpenSSL_jll", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "4cc2bb72df6ff40b055295fdef6d92955f9dede8"
+uuid = "0234f1f7-429e-5d53-9886-15a909be8d59"
+version = "1.12.2+2"
+
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
 git-tree-sha1 = "cb56ccdd481c0dd7f975ad2b3b62d9eda088f7e2"
@@ -567,6 +611,12 @@ version = "0.2.2"
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
+
+[[deps.JLD]]
+deps = ["Compat", "FileIO", "H5Zblosc", "HDF5", "Printf"]
+git-tree-sha1 = "ec6afa4fd3402e4dd5b15b3e5dd2f7dd52043ce8"
+uuid = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
+version = "0.13.3"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -751,6 +801,12 @@ deps = ["Dates", "Logging"]
 git-tree-sha1 = "cedb76b37bc5a6c702ade66be44f831fa23c681e"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.0.0"
+
+[[deps.Lz4_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "5d494bc6e85c4c9b626ee0cab05daa4085486ab1"
+uuid = "5ced341a-0733-55b8-9ab6-a4889d929147"
+version = "1.9.3+0"
 
 [[deps.MIMEs]]
 git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
@@ -1450,29 +1506,29 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═422c91a9-eaff-42c4-8880-5778cf45dc47
-# ╠═32dffc0f-76ab-4b11-99ca-bf92e57baf3e
+# ╟─422c91a9-eaff-42c4-8880-5778cf45dc47
+# ╟─32dffc0f-76ab-4b11-99ca-bf92e57baf3e
 # ╟─bc2b81ac-cd69-4d16-971d-421314313cf2
 # ╟─3621398e-3838-11ee-2e46-99fd8876add1
 # ╟─b88d2584-0632-4c17-9022-f207de0b9b93
 # ╟─3d1f5a9a-b697-4179-8ef9-092dfcc24e90
-# ╟─a057a28e-5863-4b02-8e3a-2a7f0ab3c699
+# ╠═a057a28e-5863-4b02-8e3a-2a7f0ab3c699
+# ╠═3e54ca9a-a13c-45a4-90da-8a4d740c8c14
 # ╟─0e640d35-321c-47f0-8b0e-2eaf302cf86c
 # ╟─8b5085e0-e4ac-41f3-b292-19ba6f436428
 # ╟─e28f9f98-576d-4ee9-894c-b557b7257f04
 # ╟─cdbb72d2-715e-4472-9770-fd5ab94f08ec
-# ╠═deb01281-6a66-4049-b717-fea37e04f324
-# ╠═5edd4733-f3c6-40ee-b263-abda5a4117ee
-# ╠═298c3a08-4b39-47ef-9efc-12c13942ef18
+# ╟─deb01281-6a66-4049-b717-fea37e04f324
+# ╟─5edd4733-f3c6-40ee-b263-abda5a4117ee
+# ╟─298c3a08-4b39-47ef-9efc-12c13942ef18
 # ╟─c880a42b-4b9f-419a-ae74-5673b04a539a
-# ╠═039b0a54-b4bb-41b6-9fa8-0e8b260a8d62
-# ╠═674bf2dc-a372-495a-9494-7c96e9c58a57
+# ╟─039b0a54-b4bb-41b6-9fa8-0e8b260a8d62
+# ╟─674bf2dc-a372-495a-9494-7c96e9c58a57
 # ╟─8a4459bb-8346-4dcb-ac89-504365777225
-# ╟─d219b11b-d84e-4c78-ad12-3069135075a4
-# ╟─4c63527b-fe29-4e00-b7f8-0b4624ff3b75
-# ╠═85f850d3-590d-44e3-9604-3c6234680e5c
-# ╠═0d8cde03-69d7-490c-af12-e03d572d7281
-# ╠═b3f29e9a-2428-4f66-9f63-51528c6d984c
+# ╟─fbe2bff7-cff9-4aac-bf65-33b052189641
+# ╠═b76b87e4-b98c-4bec-a4ab-79cbaefe9cfc
+# ╟─0d8cde03-69d7-490c-af12-e03d572d7281
+# ╟─b3f29e9a-2428-4f66-9f63-51528c6d984c
 # ╠═355be408-3796-4e3d-99f9-abbf05b3401e
 # ╟─d3360f8f-6dad-41da-bb85-423ae6691734
 # ╟─ea1e046d-bf54-43b9-a658-eb4b404d0b02
@@ -1481,6 +1537,6 @@ version = "1.4.1+0"
 # ╟─7d8eaf3c-f447-4ed9-93cb-7d4fb3093b59
 # ╟─e8644c68-edb4-4fce-aa1a-2c8a50380110
 # ╟─db1accb9-e51a-483e-8d4a-4ea690614db9
-# ╠═86cbc16b-6c39-4502-a4bc-6c4ffa557b39
+# ╟─86cbc16b-6c39-4502-a4bc-6c4ffa557b39
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
