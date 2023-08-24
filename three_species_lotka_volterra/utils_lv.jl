@@ -58,7 +58,7 @@ Calculates the loss based on the model's predictions of observed states only (i.
                     if true: loss is equivalent to negative log likelihood
                     if false: loss is equivalent to the squared error
 """
-function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, y_obs::Matrix{Float64}=y_obs; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
+function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{Float64}=t_train, y_obs::Matrix{Float64}=y_obs; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
     l = convert(eltype(θ), 0)
     # solve ODE
     _prob = remake(prob_nn, u0 = IC, tspan = (t[1], t[end]), p = θ)  # update ODE Problem with nn parameters
@@ -68,10 +68,30 @@ function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, y_obs::Matrix{Flo
     if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
         @inbounds X̂ = Array(tmp_sol)
         #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
-        log_sigma_sq = [θ.n_u1, θ.n_u2, θ.n_u3]
-        lc_1 = size(y_obs)[2]/2 * log_sigma_sq
-        lc_2 = sum(abs2, X̂ .- y_obs, dims=2) ./ exp.(log_sigma_sq)*0.5
+        log_sigma_sq = [θ.n_u3]
+        lc_1 = size(y_obs[3,1:length(t_train)])[1]/2 * log_sigma_sq
+        lc_2 = sum(abs2, X̂[3,1:length(t_train)] .- y_obs[3,1:length(t_train)], dims=1) ./ exp.(log_sigma_sq)*0.5
         return sum(lc_1+lc_2)  
+    else
+        return Inf
+    end
+end;
+
+function val_loss(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t_val, t_train::Vector{Float64}= t_train, y_obs::Matrix{Float64}=y_obs; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
+    l = convert(eltype(θ), 0)
+    t_val_start = length(t_train)
+    # solve ODE
+    val_prob = remake(prob_nn, u0 = IC, tspan = (t[1], t[end]), p = θ)  # update ODE Problem with nn parameters
+    tmp_sol = solve(val_prob, saveat = t,
+                abstol=tolerance, reltol=tolerance
+                )
+    if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
+        @inbounds X̂ = Array(tmp_sol)
+        #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
+        log_sigma_sq = [θ.n_u3]
+        vlc_1 = size(y_obs[3,t_val_start:end])[1]/2 * log_sigma_sq
+        vlc_2 = sum(abs2, X̂[3,t_val_start:end] .- y_obs[3,t_val_start:end], dims=1) ./ exp.(log_sigma_sq)*0.5
+        return sum(vlc_1+vlc_2)  
     else
         return Inf
     end
@@ -82,6 +102,8 @@ function train_lv(p::ComponentVector, st::NamedTuple, lr_adam::Float64, λ_reg::
     # Container to track the training
     losses = Float64[];
     losses_regularization = Float64[];
+    validation_loss = Float64[];
+
     r1 = Float64[];
     a1_1 = Float64[];
     a1_2 = Float64[];
@@ -114,7 +136,9 @@ function train_lv(p::ComponentVector, st::NamedTuple, lr_adam::Float64, λ_reg::
         @ignore_derivatives push!(a3_3, @inbounds p[12])
         
         @ignore_derivatives push!(losses_regularization, sum(abs2, @inbounds p[l_mech+1:end])/l_nn)
-        
+        #validation loss
+        @ignore_derivatives push!(validation_loss, val_loss(p))
+
         if length(losses)%5==0
             println("Current loss after $(length(losses)) iterations: $(losses[end])")
         end
@@ -135,7 +159,7 @@ function train_lv(p::ComponentVector, st::NamedTuple, lr_adam::Float64, λ_reg::
     res2 = Optimization.solve(optprob2, Optim.BFGS(initial_stepnorm=stepnorm_bfgs), callback=callback, maxiters = epochs[2], time_limit=86400)
     println("Training loss after $(length(losses)) iterations: $(losses[end])")
 
-    return res2.u, st, losses, losses_regularization, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3
+    return res2.u, st, losses, losses_regularization, validation_loss, r1, a1_1, a1_2, a1_3, r2, a2_1, a2_2, a2_3, r3, a3_1, a3_2, a3_3
 end
 
 ########## Plotting utils ###############
@@ -145,6 +169,25 @@ function plot_loss_trajectory(losses::Vector{Float64}; path_to_store::String="",
         return pl_losses
     else
         savefig(pl_losses, joinpath(path_to_store, "loss_curve.png")) 
+    end
+end
+
+function plot_val_loss_trajectory(val_losses::Vector{Float64}; path_to_store::String="", return_plot::Bool=false)
+    pl_losses = plot(1:length(val_losses), val_losses, xlabel = "Epoch", ylabel = "Validation loss", title="Validation Loss Curve", legend=false)
+    if return_plot
+        return pl_losses
+    else
+        savefig(pl_losses, joinpath(path_to_store, "validation_loss_curve.png")) 
+    end
+end
+
+function plot_val_loss_a_loss(losses::Vector{Float64}, val_losses::Vector{Float64}; path_to_store::String="", return_plot::Bool=false)
+    pl_losses = plot(1:length(losses), losses, xlabel = "Epoch", ylabel = "Loss value", label="Loss Curve", title="Losses Curve", legend=true)
+    pl_losses = plot!(1:length(val_losses), val_losses, xlabel = "Epoch", ylabel = "Loss Value", label="Validation loss", title="Losses Curve", legend=true)
+    if return_plot
+        return pl_losses
+    else
+        savefig(pl_losses, joinpath(path_to_store, "losses_both.png")) 
     end
 end
 
