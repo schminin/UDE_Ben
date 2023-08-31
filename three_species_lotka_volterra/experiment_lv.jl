@@ -22,12 +22,14 @@ const experiment_name = "30_08_23_test4"
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
 one_observable = true
-early_stopping = 5 #number of epochs for early stopping
+
+
 const problem_name = "three_species_lotka_volterra"
 const transform = "log";
 exp_sampling_strategy = ("no_sampling", )
 exp_mechanistic_setting = ("lv_missing_dynamics", )
 
+exp_early_stopping = (5, 10, 15, )
 exp_λ_reg = (1e2, 1.0, 1e-2, 1e-3, )
 epochs = (500, 1000) # (epochs_adam, epochs_bfgs)
 exp_lr_adam = (1e-4, 1e-3, 1e-2, 1e-1) # lr_bfgs = 0.1*lr_adam
@@ -39,7 +41,7 @@ exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try ou
 exp_dataset = ("lotka_volterra_datapoints_80_noise_5", "lotka_volterra_datapoints_80_noise_15", "lotka_volterra_datapoints_40_noise_5", "lotka_volterra_datapoints_40_noise_15")
 
 experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy,exp_dataset, exp_λ_reg, exp_lr_adam, 
-    exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting));
+    exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting, exp_early_stopping));
 
 if test_setup
     array_nr = 1
@@ -47,7 +49,7 @@ else
     array_nr = parse(Int, ARGS[1])
 end
 
-mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row = experiments[array_nr]
+mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row, early_stopping = experiments[array_nr]
 exp_specifics = array_nr
 
 ############# Prepare Experiment #######################
