@@ -65,7 +65,7 @@ begin
 end;
 
 # ╔═╡ 3e54ca9a-a13c-45a4-90da-8a4d740c8c14
-exp_count
+hp_settings
 
 # ╔═╡ 0e640d35-321c-47f0-8b0e-2eaf302cf86c
 # Load the summary.csv file
@@ -98,7 +98,7 @@ md"""
 x_options = names(df)[2:end-6]
 
 # ╔═╡ 5edd4733-f3c6-40ee-b263-abda5a4117ee
-y_options = names(df)[end-6:end]
+y_options = names(df)[end-5:end]
 
 # ╔═╡ 298c3a08-4b39-47ef-9efc-12c13942ef18
 @bind x_axis Select(x_options; default="λ_reg")
@@ -150,12 +150,6 @@ end
 begin
 	p1 = Plot(df_sub, x=Symbol(x_axis), y=Symbol(success), color=:value, kind="bar", Layout(barmode="stack", width=600, height=300, xaxis_title_text="$x_axis",yaxis_title_text="$success", title_text="Barplot of successful experiments"),labels=attr(e=" "))
 end
-
-# ╔═╡ 355be408-3796-4e3d-99f9-abbf05b3401e
-# ╠═╡ disabled = true
-#=╠═╡
-# 8 neurons log file
-  ╠═╡ =#
 
 # ╔═╡ d3360f8f-6dad-41da-bb85-423ae6691734
 md"""
@@ -1512,14 +1506,14 @@ version = "1.4.1+0"
 # ╟─3621398e-3838-11ee-2e46-99fd8876add1
 # ╟─b88d2584-0632-4c17-9022-f207de0b9b93
 # ╟─3d1f5a9a-b697-4179-8ef9-092dfcc24e90
-# ╠═a057a28e-5863-4b02-8e3a-2a7f0ab3c699
+# ╟─a057a28e-5863-4b02-8e3a-2a7f0ab3c699
 # ╠═3e54ca9a-a13c-45a4-90da-8a4d740c8c14
 # ╟─0e640d35-321c-47f0-8b0e-2eaf302cf86c
 # ╟─8b5085e0-e4ac-41f3-b292-19ba6f436428
 # ╟─e28f9f98-576d-4ee9-894c-b557b7257f04
 # ╟─cdbb72d2-715e-4472-9770-fd5ab94f08ec
-# ╟─deb01281-6a66-4049-b717-fea37e04f324
-# ╟─5edd4733-f3c6-40ee-b263-abda5a4117ee
+# ╠═deb01281-6a66-4049-b717-fea37e04f324
+# ╠═5edd4733-f3c6-40ee-b263-abda5a4117ee
 # ╟─298c3a08-4b39-47ef-9efc-12c13942ef18
 # ╟─c880a42b-4b9f-419a-ae74-5673b04a539a
 # ╟─039b0a54-b4bb-41b6-9fa8-0e8b260a8d62

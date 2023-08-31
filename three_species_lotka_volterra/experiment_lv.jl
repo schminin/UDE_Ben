@@ -17,12 +17,12 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "30_08_23_test3"
+const experiment_name = "30_08_23_test4"
 
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
 one_observable = true
-early_stopping = 10 #number of epochs for early stopping
+early_stopping = 5 #number of epochs for early stopping
 const problem_name = "three_species_lotka_volterra"
 const transform = "log";
 exp_sampling_strategy = ("no_sampling", )
@@ -72,7 +72,7 @@ experiment_series_path, experiment_run_path, data_path, parameter_path = create_
 
 if array_nr == 1
     open(joinpath(experiment_series_path, "summary.csv"), "a") do io
-        header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" "MSE" "nMSE" "runtime" "loss" "negLL" "validation_loss"]
+        header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "early stopping" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" "MSE" "nMSE" "runtime" "loss" "negLL" "validation_loss"]
         writedlm(io, header, ",")
     end
     save(joinpath(experiment_series_path, "hp_settings.jld"), 
@@ -174,5 +174,5 @@ NegLL = nll(p_opt)
 open(joinpath(experiment_series_path, "summary.csv"), "a") do io
     loss = losses[end]
     val_loss = validation_loss[end]
-    writedlm(io, [problem_name mechanistic_setting dataset sampling_strategy par_row array_nr epochs[1] epochs[2] lr_adam stepnorm_bfgs λ_reg act_fct_name hidden_layers hidden_neurons tolerance mean(obs_MSE) mean(obs_nMSE) runtime loss NegLL val_loss], ",")    
+    writedlm(io, [problem_name mechanistic_setting dataset sampling_strategy par_row array_nr early_stopping epochs[1] epochs[2] lr_adam stepnorm_bfgs λ_reg act_fct_name hidden_layers hidden_neurons tolerance mean(obs_MSE) mean(obs_nMSE) runtime loss NegLL val_loss], ",")    
 end
