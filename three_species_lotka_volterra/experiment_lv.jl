@@ -17,11 +17,12 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "24_08_23_test3"
+const experiment_name = "30_08_23_test3"
 
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
 one_observable = true
+early_stopping = 10 #number of epochs for early stopping
 const problem_name = "three_species_lotka_volterra"
 const transform = "log";
 exp_sampling_strategy = ("no_sampling", )
@@ -84,7 +85,9 @@ if array_nr == 1
         "act_fct", exp_act_fct,
         "tolerance", exp_tolerance,
         "par_setting", exp_par_setting,
-        "dataset", exp_dataset)
+        "dataset", exp_dataset,
+        "one observable", one_observable,
+        "early stopping", early_stopping)
     # hp_settings = load(joinpath(experiment_series_path, "hp_settings.jld"))
 end
 

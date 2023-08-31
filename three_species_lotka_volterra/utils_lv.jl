@@ -168,6 +168,12 @@ function train_lv(p::ComponentVector, st::NamedTuple, lr_adam::Float64, λ_reg::
         if length(losses)%5==0
             println("Current loss after $(length(losses)) iterations: $(losses[end])")
         end
+        if length(validation_loss)>=early_stopping
+            early_stop_test = validation_loss[end-(early_stopping-1):end]
+            if issorted(view(early_stop_test,:), lt = <)
+                return true
+            end
+        end
         return false
     end;
 
@@ -285,14 +291,25 @@ function plot_hidden_boehm(t_plot::Vector{Float64}, pred::Matrix{Float64}, t_ful
 end
 
 function plot_observed_lv(t_plot::Vector{Float64}, pred_obs::Matrix{Float64}, t_full::Vector{Float64}, y_obs_full::Matrix{Float64}, t::Vector{Float64}, y_obs::Matrix{Float64}, path_to_store::String, ps::ComponentVector)
-    p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.n_u1)), return_plot=true, plot_observed=true, plot_noise=true)
-    p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.n_u2)), return_plot=true, plot_observed=true, plot_noise=true)
+    if one_observable == false
+        p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; std=sqrt.(exp.(ps.n_u1)), return_plot=true, plot_observed=true, plot_noise=true)
+        p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; std=sqrt.(exp.(ps.n_u2)), return_plot=true, plot_observed=true, plot_noise=true)
+    elseif one_observable
+        p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; return_plot=true, plot_observed=false, plot_noise=false)
+        p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=false, plot_noise=false)
+        
+    end
     p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; std=sqrt.(exp.(ps.n_u3)), return_plot=true, plot_observed=true, plot_noise=true)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_with_noise.png"))
-    
-    p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; return_plot=true, plot_observed=true, plot_noise=false)
-    p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=true, plot_noise=false)
+    if one_observable == false
+        p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; return_plot=true, plot_observed=true, plot_noise=false)
+        p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=true, plot_noise=false)
+        
+    elseif one_observable
+        p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; return_plot=true, plot_observed=false, plot_noise=false)
+        p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=false, plot_noise=false)
+    end
     p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t, y_obs[3,:]; return_plot=true, plot_observed=true, plot_noise=false)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_without_noise.png"))
