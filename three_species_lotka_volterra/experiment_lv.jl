@@ -2,7 +2,7 @@
 using CSV, DataFrames
 using Lux
 using ComponentArrays, SciMLSensitivity, NNlib, Optimisers, OrdinaryDiffEq, Random,
-      Statistics, OneHotArrays
+      Statistics, OneHotArrays, StatsBase
 using Plots, Measures
 using Random
 using Dates
