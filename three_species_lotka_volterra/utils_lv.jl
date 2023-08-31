@@ -58,11 +58,11 @@ Calculates the loss based on the model's predictions of observed states only (i.
                     if true: loss is equivalent to negative log likelihood
                     if false: loss is equivalent to the squared error
 """
-function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{Float64}=t_train, y_obs::Matrix{Float64}=y_obs; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
+function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{Float64}=t_train, y_obs::Matrix{Float64}=y_obs[:,1:length(t_train)]; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
     l = convert(eltype(θ), 0)
     # solve ODE
     _prob = remake(prob_nn, u0 = IC, tspan = (t[1], t[end]), p = θ)  # update ODE Problem with nn parameters
-    tmp_sol = solve(_prob, saveat = t,
+    tmp_sol = solve(_prob, saveat = t_train,
                 abstol=tolerance, reltol=tolerance
                 )
     if one_observable   #only one observable (u3)
@@ -70,8 +70,8 @@ function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{F
             @inbounds X̂ = Array(tmp_sol)
             #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
             log_sigma_sq = [θ.n_u3]
-            lc_1 = size(y_obs[3,1:length(t_train)])[1]/2 * log_sigma_sq
-            lc_2 = sum(abs2, X̂[3,1:length(t_train)] .- y_obs[3,1:length(t_train)], dims=1) ./ exp.(log_sigma_sq)*0.5
+            lc_1 = size(y_obs[3,:])[1]/2 * log_sigma_sq
+            lc_2 = sum(abs2, X̂[3,:] .- y_obs[3,:], dims=1) ./ exp.(log_sigma_sq)*0.5
             return sum(lc_1+lc_2)  
         else
             return Inf
@@ -81,8 +81,8 @@ function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{F
             @inbounds X̂ = Array(tmp_sol)
             #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
             log_sigma_sq = [θ.n_u1, θ.n_u2, θ.n_u3]
-            lc_1 = size(y_obs[:,1:length(t_train)])[2]/2 * log_sigma_sq
-            lc_2 = sum(abs2, X̂[:,1:length(t_train)] .- y_obs[:,1:length(t_train)], dims=2) ./ exp.(log_sigma_sq)*0.5
+            lc_1 = size(y_obs)[2]/2 * log_sigma_sq
+            lc_2 = sum(abs2, X̂ .- y_obs[:,:], dims=2) ./ exp.(log_sigma_sq)*0.5
             return sum(lc_1+lc_2)  
         else
             return Inf
@@ -90,12 +90,12 @@ function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{F
     end
 end;
 
-function val_loss(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t_val, t_train::Vector{Float64}= t_train, y_obs::Matrix{Float64}=y_obs; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
+function val_loss(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t_val, t_train::Vector{Float64}= t_train, y_obs::Matrix{Float64}=y_obs[:,length(t_train):end]; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
     l = convert(eltype(θ), 0)
     t_val_start = length(t_train)
     # solve ODE
     val_prob = remake(prob_nn, u0 = IC, tspan = (t[1], t[end]), p = θ)  # update ODE Problem with nn parameters
-    tmp_sol = solve(val_prob, saveat = t,
+    tmp_sol = solve(val_prob, saveat = vcat(t[1], t),
                 abstol=tolerance, reltol=tolerance
                 )
     if one_observable #only u3 observed
@@ -103,26 +103,25 @@ function val_loss(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t_val, t_train:
             @inbounds X̂ = Array(tmp_sol)
             #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
             log_sigma_sq = [θ.n_u3]
-            vlc_1 = size(y_obs[3,t_val_start:end])[1]/2 * log_sigma_sq
-            vlc_2 = sum(abs2, X̂[3,t_val_start:end] .- y_obs[3,t_val_start:end], dims=1) ./ exp.(log_sigma_sq)*0.5
+            vlc_1 = size(y_obs[3,:])[1]/2 * log_sigma_sq
+            vlc_2 = sum(abs2, X̂[3,:] .- y_obs[3,:], dims=1) ./ exp.(log_sigma_sq)*0.5
             return sum(vlc_1+vlc_2)  
         else
             return Inf
         end
     else    #all states observed
         if size(tmp_sol) == size(y_obs) # see https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/training_tips/divergence/
-            @inbounds X̂ = Array(tmp_sol)
+            @inbounds X̂ = Array(tmp_sol)[:2:end]
             #loss = n_t * log(sigma) + 1/sigma² * sum_t (pred-true)² = lc1 + lc2
             log_sigma_sq = [θ.n_u1, θ.n_u2, θ.n_u3]
-            vlc_1 = size(y_obs[:,t_val_start:end])[2]/2 * log_sigma_sq
-            vlc_2 = sum(abs2, X̂[:,t_val_start:end] .- y_obs[:,t_val_start:end], dims=2) ./ exp.(log_sigma_sq)*0.5
+            vlc_1 = size(y_obs)[2]/2 * log_sigma_sq
+            vlc_2 = sum(abs2, X̂ .- y_obs, dims=2) ./ exp.(log_sigma_sq)*0.5
             return sum(vlc_1+vlc_2)  
         else
             return Inf
         end
     end
 end;
-
 
 function train_lv(p::ComponentVector, st::NamedTuple, lr_adam::Float64, λ_reg::Float64, stepnorm_bfgs::Float64, epochs::Tuple{Int, Int}, l_mech::Int)
     # Container to track the training
@@ -176,8 +175,17 @@ function train_lv(p::ComponentVector, st::NamedTuple, lr_adam::Float64, λ_reg::
         end
         return false
     end;
-
-    loss(θ) = nll(θ) + convert(eltype(θ), λ_reg)*sum(abs2, @inbounds θ[l_mech+1:end])./l_nn
+    
+    loss_l2(θ) = nll(θ) + convert(eltype(θ), λ_reg)*sum(abs2, @inbounds θ[l_mech+1:end])./l_nn
+    loss_l1(θ) = nll(θ) + convert(eltype(θ), λ_reg)*sum(abs, @inbounds θ[l_mech+1:end])./l_nn
+    loss_nr(θ) = nll(θ)
+    if reg == "l2"
+        loss = loss_l2
+    elseif reg == "l1"
+        loss = loss_l1
+    else 
+        loss = loss_nr
+    end
 
     # First train with ADAM for better convergence -> move the parameters into a
     # favourable starting positing for BFGS

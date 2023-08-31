@@ -17,7 +17,7 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "30_08_23_test4"
+const experiment_name = "30_08_23_test5"
 
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
@@ -30,6 +30,7 @@ exp_sampling_strategy = ("no_sampling", )
 exp_mechanistic_setting = ("lv_missing_dynamics", )
 
 exp_early_stopping = (5, 10, 15, )
+exp_reg = ("l2", "l1", )
 exp_λ_reg = (1e2, 1.0, 1e-2, 1e-3, )
 epochs = (500, 1000) # (epochs_adam, epochs_bfgs)
 exp_lr_adam = (1e-4, 1e-3, 1e-2, 1e-1) # lr_bfgs = 0.1*lr_adam
@@ -41,7 +42,7 @@ exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try ou
 exp_dataset = ("lotka_volterra_datapoints_80_noise_5", "lotka_volterra_datapoints_80_noise_15", "lotka_volterra_datapoints_40_noise_5", "lotka_volterra_datapoints_40_noise_15")
 
 experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy,exp_dataset, exp_λ_reg, exp_lr_adam, 
-    exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting, exp_early_stopping));
+    exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting, exp_early_stopping, exp_reg));
 
 if test_setup
     array_nr = 1
@@ -49,7 +50,7 @@ else
     array_nr = parse(Int, ARGS[1])
 end
 
-mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row, early_stopping = experiments[array_nr]
+mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row, early_stopping, reg = experiments[array_nr]
 exp_specifics = array_nr
 
 ############# Prepare Experiment #######################
@@ -74,7 +75,7 @@ experiment_series_path, experiment_run_path, data_path, parameter_path = create_
 
 if array_nr == 1
     open(joinpath(experiment_series_path, "summary.csv"), "a") do io
-        header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "early stopping" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" "MSE" "nMSE" "runtime" "loss" "negLL" "validation_loss"]
+        header = ["problem_name" "mechanistic_setting" "dataset" "sampling_strategy" "par_row" "array_nr" "early stopping" "reg" "epochs_adam" "epochs_bfgs" "lr_adam" "stepnorm_bfgs" "λ_reg" "act_fct" "hidden_layers" "hidden_neurons" "tolerance" "MSE" "nMSE" "runtime" "loss" "negLL" "validation_loss"]
         writedlm(io, header, ",")
     end
     save(joinpath(experiment_series_path, "hp_settings.jld"), 
@@ -96,7 +97,7 @@ end
 IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name)
 
 t_train = t[1:convert(Int64,floor(length(t)/2))]
-t_val = t
+t_val = t[length(t_train):end]
 # create model 
 nn_model, ps, st = create_model(act_fct_name, hidden_layers, hidden_neurons, p_ph, n_out)
 
@@ -176,5 +177,5 @@ NegLL = nll(p_opt)
 open(joinpath(experiment_series_path, "summary.csv"), "a") do io
     loss = losses[end]
     val_loss = validation_loss[end]
-    writedlm(io, [problem_name mechanistic_setting dataset sampling_strategy par_row array_nr early_stopping epochs[1] epochs[2] lr_adam stepnorm_bfgs λ_reg act_fct_name hidden_layers hidden_neurons tolerance mean(obs_MSE) mean(obs_nMSE) runtime loss NegLL val_loss], ",")    
+    writedlm(io, [problem_name mechanistic_setting dataset sampling_strategy par_row array_nr early_stopping reg epochs[1] epochs[2] lr_adam stepnorm_bfgs λ_reg act_fct_name hidden_layers hidden_neurons tolerance mean(obs_MSE) mean(obs_nMSE) runtime loss NegLL val_loss], ",")    
 end
