@@ -17,9 +17,9 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "30_08_23_test5"
+const experiment_name = "01_09_23"
 
-const test_setup = true  # if used on the cluster this has to be set to false
+const test_setup = false  # if used on the cluster this has to be set to false
 const create_plots = true
 one_observable = true
 
@@ -31,17 +31,17 @@ exp_mechanistic_setting = ("lv_missing_dynamics", )
 
 exp_early_stopping = (5, 10, 15, )
 exp_reg = ("l2", "l1", )
-exp_λ_reg = (1e2, 1.0, 1e-2, 1e-3, )
+exp_λ_reg = (1e-1, 1e-2, 1e-3, )
 epochs = (500, 1000) # (epochs_adam, epochs_bfgs)
-exp_lr_adam = (1e-4, 1e-3, 1e-2, 1e-1) # lr_bfgs = 0.1*lr_adam
-exp_hidden_layers = (1, 2, 3, )
+exp_lr_adam = (1e-3, 1e-2) # lr_bfgs = 0.1*lr_adam
+exp_hidden_layers = (1, 2, 3 )
 exp_hidden_neurons = (4, 8, )
 exp_act_fct = ("tanh", ) 
 exp_tolerance = (1e-8, )
 exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try out
 exp_dataset = ("lotka_volterra_datapoints_80_noise_5", "lotka_volterra_datapoints_80_noise_15", "lotka_volterra_datapoints_40_noise_5", "lotka_volterra_datapoints_40_noise_15")
 
-experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy,exp_dataset, exp_λ_reg, exp_lr_adam, 
+experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy, exp_dataset, exp_λ_reg, exp_lr_adam, 
     exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting, exp_early_stopping, exp_reg));
 
 if test_setup

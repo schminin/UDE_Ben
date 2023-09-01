@@ -7,7 +7,7 @@
 #SBATCH -n 1                                                                         # Total number of mpi tasks requested
 #SBATCH --cpus-per-task 1                                                            # cpus per task
 #SBATCH -t 3-20:00:00                                                                # Run time (hh:mm:ss) - 1.5 hours
-#SBATCH --array=1-8                                                                # there is a max array size - 512 t$
+#SBATCH --array=1-864%144                                                           # there is a max array size - 512 t$
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=nina.schmid@uni-bonn.de
 
