@@ -89,8 +89,8 @@ if array_nr == 1
         "tolerance", exp_tolerance,
         "par_setting", exp_par_setting,
         "dataset", exp_dataset,
-        "one observable", one_observable,
-        "early stopping", early_stopping)
+        "one_observable", one_observable,
+        "early_stopping", exp_early_stopping)
     # hp_settings = load(joinpath(experiment_series_path, "hp_settings.jld"))
 end
 

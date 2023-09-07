@@ -54,6 +54,7 @@ begin
 	lr_adam_count = length(get(hp_settings,"lr_adam",42))
 	hidden_layers_count = length(get(hp_settings,"hidden_layer",42))
 	hidden_neurons_count = length(get(hp_settings,"hidden_neurons",42))
+	#early_stopping count = length(get(hp_settings,"early stopping",42))
 	act_fct_name_count = length(get(hp_settings,"act_fct",42))
 	tolerance_count= length(get(hp_settings,"tolerance",42))
 	par_setting_count = length(get(hp_settings,"par_setting",42))
@@ -61,7 +62,7 @@ begin
 	mechanistic_setting_count = length(get(hp_settings,"mechanistic_setting",42))
 	sampling_strategy_count = length(get(hp_settings,"sampling_strategy",42))
 	#calculate the total number of experiments done
-	exp_count = tolerance_count*hidden_neurons_count*hidden_layers_count*lr_adam_count*λ_reg_count*act_fct_name_count*par_setting_count*dataset_count
+	exp_count = tolerance_count*hidden_neurons_count*hidden_layers_count*lr_adam_count*λ_reg_count*act_fct_name_count*par_setting_count*dataset_count*3
 end;
 
 # ╔═╡ 3e54ca9a-a13c-45a4-90da-8a4d740c8c14
@@ -1506,9 +1507,9 @@ version = "1.4.1+0"
 # ╟─3621398e-3838-11ee-2e46-99fd8876add1
 # ╟─b88d2584-0632-4c17-9022-f207de0b9b93
 # ╟─3d1f5a9a-b697-4179-8ef9-092dfcc24e90
-# ╟─a057a28e-5863-4b02-8e3a-2a7f0ab3c699
+# ╠═a057a28e-5863-4b02-8e3a-2a7f0ab3c699
 # ╠═3e54ca9a-a13c-45a4-90da-8a4d740c8c14
-# ╟─0e640d35-321c-47f0-8b0e-2eaf302cf86c
+# ╠═0e640d35-321c-47f0-8b0e-2eaf302cf86c
 # ╟─8b5085e0-e4ac-41f3-b292-19ba6f436428
 # ╟─e28f9f98-576d-4ee9-894c-b557b7257f04
 # ╟─cdbb72d2-715e-4472-9770-fd5ab94f08ec
@@ -1520,10 +1521,9 @@ version = "1.4.1+0"
 # ╟─674bf2dc-a372-495a-9494-7c96e9c58a57
 # ╟─8a4459bb-8346-4dcb-ac89-504365777225
 # ╟─fbe2bff7-cff9-4aac-bf65-33b052189641
-# ╠═b76b87e4-b98c-4bec-a4ab-79cbaefe9cfc
+# ╟─b76b87e4-b98c-4bec-a4ab-79cbaefe9cfc
 # ╟─0d8cde03-69d7-490c-af12-e03d572d7281
 # ╟─b3f29e9a-2428-4f66-9f63-51528c6d984c
-# ╠═355be408-3796-4e3d-99f9-abbf05b3401e
 # ╟─d3360f8f-6dad-41da-bb85-423ae6691734
 # ╟─ea1e046d-bf54-43b9-a658-eb4b404d0b02
 # ╟─f84e6bcc-713f-4622-b0c5-2af7529f6fd4
