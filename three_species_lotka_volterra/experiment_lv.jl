@@ -17,9 +17,9 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "01_09_23"
+const experiment_name = "14_09_23_test"
 
-const test_setup = false  # if used on the cluster this has to be set to false
+const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
 one_observable = true
 
@@ -96,8 +96,10 @@ end
 
 IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name)
 
-t_train = t[1:convert(Int64,floor(length(t)/2))]
-t_val = t[length(t_train):end]
+t_train = t[Not(1:3:end)]
+pushfirst!(t_train,0.0)
+
+t_val = t[1:3:end]
 # create model 
 nn_model, ps, st = create_model(act_fct_name, hidden_layers, hidden_neurons, p_ph, n_out)
 
