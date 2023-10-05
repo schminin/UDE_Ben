@@ -33,24 +33,18 @@ begin
 	using PlutoUI
 end
 
-# ╔═╡ 575d75ce-d27b-48b2-ace1-c0b0024dd3c4
+# ╔═╡ c0fba313-f6d9-4988-8517-cdf5f53556f8
 begin
-	function MSE(y, y_pred)
-    mse = mean((y-y_pred).^2, dims=1)
-    #print("n states: $(length(mse))")
-    return mse
-	end
+	md""" ## Evaluation of validation set ### """
+end
 
-	function nMSE(y, y_pred)
-	    return mean(((y-y_pred).^2)./y, dims=1)
-	end
-	function negll(pred,obs,log_sigma_sq)
-    lc_1 = size(obs)[1]/2 * log_sigma_sq
-    lc_2 = sum(abs2, pred .- obs, dims=1) ./ exp.(log_sigma_sq)*0.5
-    ngll = sum(lc_1.+lc_2)
-    return ngll
+# ╔═╡ a2e470ae-143d-4e0a-9c94-b524ca4c5417
+begin
+	md""" #### Loading of data #### """
 end
-end
+
+# ╔═╡ bd20b194-e19e-4d6e-bb8c-63dd2f4e9f3f
+md""" ###### Loading of mechanistic parameters """
 
 # ╔═╡ ddbdd6f0-9d12-4a00-8c34-f702d3ba07f9
 begin
@@ -75,95 +69,149 @@ end
 
 # ╔═╡ bb5cc10a-7db0-413b-b872-f85c8f98a8e8
 begin
+	#load observed data
 	data_path = joinpath(pwd(), problem_name, "data", "lotka_volterra_datapoints_40_noise_5.csv")
     df =CSV.read(data_path, DataFrame, delim = ",")
     y_obs = identity.(transpose(Array(df[!, 2:end])))
     t = df[!, "t"]
+	
+	#load indices of observed data points to extract correct points from predictions
+	real_data = readdlm(joinpath(pwd(), problem_name, "data/lotka_volterra_reference.csv"), ','; header=true)[1]'
+    t_full = real_data[1,:]
+    idx = findall(in(t), t_full)
+
+	#subselect datapoints from observed time points from predictions
+	data_minvalloss_full = CSV.read("$experiment_output_path/lv_missing_dynamics_lotka_volterra_datapoints_40_noise_5/no_sampling/par_1/183/predictions.csv", DataFrame, delim = ",")
+    data_exp_183 = Matrix(data_minvalloss_full[idx,:])
+
+    data_minloss_full = 	CSV.read("$experiment_output_path/lv_missing_dynamics_lotka_volterra_datapoints_40_noise_5/no_sampling/par_1/807/predictions.csv",DataFrame, delim =  ',')
+    data_exp_807 = Matrix(data_minloss_full[idx,:])
+end
+
+# ╔═╡ 42569250-99ca-4962-ab49-ab90c093cc79
+md""" ##### Defining functions ####"""
+
+# ╔═╡ 575d75ce-d27b-48b2-ace1-c0b0024dd3c4
+begin
+	#mse, nmse and ngll functions
+	function MSE(y, y_pred)
+    mse = mean((y-y_pred).^2, dims=1)
+    #print("n states: $(length(mse))")
+    return mse
+	end
+
+	function nMSE(y, y_pred)
+	    return mean(((y-y_pred).^2)./y, dims=1)
+	end
+	function negll(pred,obs,log_sigma_sq)
+    lc_1 = size(obs)[1]/2 * log_sigma_sq
+    lc_2 = sum(abs2, pred .- obs, dims=1) ./ exp.(log_sigma_sq)*0.5
+    ngll = sum(lc_1.+lc_2)
+    return ngll
+end
 end
 
 # ╔═╡ d85bd822-369a-450b-944d-c381f9049914
 begin
 	function validationevaluation(n_skip_data,time_break,n_u3_val,n_u3_minl)
-    real_data = readdlm(joinpath(pwd(), problem_name, "data/lotka_volterra_reference.csv"), ','; header=true)[1]'
-    t_full = real_data[1,:]
-    data_path = joinpath(pwd(), problem_name, "data", "lotka_volterra_datapoints_40_noise_5.csv")
-    df =CSV.read(data_path, DataFrame, delim = ",")
-    y_obs = identity.(transpose(Array(df[!, 2:end])))
-    t = df[!, "t"]
-    idx = findall(in(t), t_full)
-
-    y_obs_skipped = 
-    time_skipped = transpose([transpose(t[1:n_skip_data:time_break]) transpose(t[time_break:end])])
-
-    data_minvalloss_full = CSV.read("$experiment_output_path/lv_missing_dynamics_lotka_volterra_datapoints_40_noise_5/no_sampling/par_1/183/predictions.csv", DataFrame, delim = ",") #t,u1,u2,u3
-    data_minvalloss = Matrix(data_minvalloss_full[idx,:])
-
-    data_minloss_full = CSV.read("$experiment_output_path/lv_missing_dynamics_lotka_volterra_datapoints_40_noise_5/no_sampling/par_1/807/predictions.csv",DataFrame, delim =  ',') #t,u1,u2,u3
-    data_minloss = Matrix(data_minloss_full[idx,:])
-
-    p = plot(data_minvalloss[:,1],data_minvalloss[:,2], label="prediction of min val loss try",title="u1")
-    p = plot!(data_minvalloss[:,1],data_minloss[:,2],label="prediction of min loss try", xlabel="Time")
-    p = plot!(t,y_obs[1,:],label="real data", xlabel="Time")
-
-    p2 = plot(data_minvalloss[:,1],data_minvalloss[:,3], label="prediction of min val loss try",title="u2")
-    p2 = plot!(data_minvalloss[:,1],data_minloss[:,3],label="prediction of min loss try", xlabel="Time")
-    p2 = plot!(t,y_obs[2,:],label="real data", xlabel="Time")
-
-    p3 = plot(data_minvalloss[:,1],data_minvalloss[:,4], label="prediction of min val loss try",title="u3")
-    p3 = plot!(data_minvalloss[:,1],data_minloss[:,4],label="prediction of min loss try", xlabel="Time")
-    p3 = plot!(t,y_obs[3,:],label="real data", xlabel="Time")
+		#plots of subselected datapoints
+	    #p = plot(data_exp_183[:,1],data_exp_183[:,2], label="prediction of min val loss try",title="u1")
+	    #p = plot!(data_exp_807[:,1],data_exp_807[:,2],label="prediction of min loss try", xlabel="Time")
+	    #p = plot!(t,y_obs[1,:],label="real data", xlabel="Time")
+	
+	    #p2 = plot(data_exp_183[:,1],data_exp_183[:,3], label="prediction of min val loss try",title="u2")
+	    #p2 = plot!(data_exp_807[:,1],data_exp_807[:,3],label="prediction of min loss try", xlabel="Time")
+	    #p2 = plot!(t,y_obs[2,:],label="real data", xlabel="Time")
+	
+	    #p3 = plot(data_exp_183[:,1],data_exp_183[:,4], label="prediction of min val loss try",title="u3")
+	    #p3 = plot!(data_exp_807[:,1],data_exp_[:,4],label="prediction of min loss try", xlabel="Time")
+	    #p3 = plot!(t,y_obs[3,:],label="real data", xlabel="Time")
 
     #choose different datapoints for validation loss
-    real_skipped = transpose([transpose(y_obs[1,1:n_skip_data:time_break]) transpose(y_obs[1,time_break:end])])
-    minvalloss_skipped = transpose([transpose(data_minvalloss[1:n_skip_data:time_break,2]) transpose(data_minvalloss[time_break:end,2])])
-    minloss_skipped = transpose([transpose(data_minloss[1:n_skip_data:time_break,2]) transpose(data_minloss[time_break:end,2])])
+	#new validation time points
+        time_skipped = transpose([transpose(t[1:n_skip_data:time_break]) transpose(t[time_break:end])])
 
-    p4 = plot(time_skipped,minloss_skipped,label="min loss skipped data points", xlabel="Time",title="u1")
-    p4 = plot!(time_skipped,minvalloss_skipped, label="min val loss skipped data points")
-    p4 = plot!(t,y_obs[1,:],label="real data")
-    p4=scatter!(time_skipped,real_skipped,markershape=:x, color=2, label="Skipped datapoints")
-
-    skipped_mse_1 = MSE(real_skipped,minvalloss_skipped)
-    skipped_nmse_1 = nMSE(real_skipped,minvalloss_skipped)
-    ##u2
-
-    real_skipped2 = transpose([transpose(y_obs[2,1:n_skip_data:time_break]) transpose(y_obs[2,time_break:end])])
-    minvalloss_skipped2 = transpose([transpose(data_minvalloss[1:n_skip_data:time_break,3]) transpose(data_minvalloss[time_break:end,3])])
-    minloss_skipped2 = transpose([transpose(data_minloss[1:n_skip_data:time_break,3]) transpose(data_minloss[time_break:end,3])])
-
-    skipped_mse_2 = MSE(real_skipped2,minvalloss_skipped2)
-    skipped_nmse_2 = nMSE(real_skipped2,minvalloss_skipped2)
-
-    p4_2 = plot(time_skipped,minloss_skipped,label="min loss skipped data points", xlabel="Time", title="u2")
-    p4_4 = plot!(time_skipped,minvalloss_skipped, label="min val loss skipped data points")
-    p4_2 = plot!(real_data[1,:],real_data[2,:],label="real data")
-    p4_2=scatter!(time_skipped,real_skipped,markershape=:x, color=2, label="Skipped datapoints")
-
-
-    ###u3
-
-    real_skipped3 = transpose([transpose(y_obs[3,1:n_skip_data:time_break]) transpose(y_obs[3,time_break:end])])
-    minvalloss_skipped3 = transpose([transpose(data_minvalloss[1:n_skip_data:time_break,4]) transpose(data_minvalloss[time_break:end,4])])
-    minloss_skipped3 = transpose([transpose(data_minloss[1:n_skip_data:time_break,4]) transpose(data_minloss[time_break:end,4])])
-
-    skipped_mse_3 = MSE(real_skipped,minvalloss_skipped3)
-    skipped_nmse_3 = nMSE(real_skipped3,minvalloss_skipped3)
-    skipped_negll_3 = negll(real_skipped3,minvalloss_skipped3,n_u3_val) 
-    p4_3 = plot(time_skipped,minloss_skipped,label="min loss skipped data points", xlabel="Time",title="u3")
-    p4_3 = plot!(time_skipped,minvalloss_skipped, label="min val loss skipped data points")
-    p4_3 = plot!(real_data[1,:],real_data[2,:],label="real data")
-    p4_3=scatter!(time_skipped,real_skipped,markershape=:x, color=2, label="Skipped datapoints")
-	#minvalloss
-    skipped_mse = [skipped_mse_1,skipped_mse_2,skipped_mse_3]
-    skipped_nmse = [skipped_nmse_1,skipped_nmse_2,skipped_nmse_3]
-    skipped_ngll = [skipped_negll_3]
-	#minloss
-	skipped_mse_3_807 = MSE(real_skipped,minloss_skipped3)
-    skipped_nmse_3_807 = nMSE(real_skipped3,minloss_skipped3)
-    skipped_negll_3_807 = negll(real_skipped3,minloss_skipped3,n_u3_minl) 
-    return skipped_mse_3,skipped_nmse_3,skipped_ngll, p4,p4_2,p4_3, skipped_mse_3_807, skipped_nmse_3_807, skipped_negll_3_807
+		###new validation values for u2#####
+	
+	    real_skipped1 = transpose([transpose(y_obs[1,1:n_skip_data:time_break]) transpose(y_obs[1,time_break:end])])
+			
+	    data_exp_183_skipped1 = transpose([transpose(data_exp_183[1:n_skip_data:time_break,1]) transpose(data_exp_183[time_break:end,1])])
+		
+	    data_exp_807_skipped1 = transpose([transpose(data_exp_807[1:n_skip_data:time_break,1]) transpose(data_exp_807[time_break:end,1])])
+		
+		###loss values for exp 183
+	    skipped_mse_1_183 = MSE(real_skipped1,data_exp_183_skipped1)
+	    skipped_nmse_1_183 = nMSE(real_skipped1,data_exp_183_skipped1)
+	    skipped_negll_1_183 = negll(real_skipped1,data_exp_183_skipped1,n_u3_val) 
+		
+		###loss values for exp 807
+		skipped_mse_1_807 = MSE(real_skipped1,data_exp_807_skipped1)
+	    skipped_nmse_1_807 = nMSE(real_skipped1,data_exp_807_skipped1)
+	    skipped_negll_1_807 = negll(real_skipped1,data_exp_807_skipped1,n_u3_minl) 
+		
+		### plot of u1 with new validation set
+	    p4_1 = plot(time_skipped,data_exp_807_skipped1,label="min loss skipped data points", xlabel="Time",title="u3")
+	    p4_1 = plot!(time_skipped,data_exp_183_skipped1, label="min val loss skipped data points")
+	    p4_1 = plot!(real_data[1,:],real_data[2,:],label="real data")
+	    p4_1=scatter!(time_skipped,real_skipped1,markershape=:x, color=2, label="Skipped datapoints")
+	
+	
+	     ###new validation values for u2#####
+	
+	    real_skipped2 = transpose([transpose(y_obs[2,1:n_skip_data:time_break]) transpose(y_obs[2,time_break:end])])
+			
+	    data_exp_183_skipped2 = transpose([transpose(data_exp_183[1:n_skip_data:time_break,2]) transpose(data_exp_183[time_break:end,2])])
+		
+	    data_exp_807_skipped2 = transpose([transpose(data_exp_807[1:n_skip_data:time_break,2]) transpose(data_exp_807[time_break:end,2])])
+		
+		###loss values for exp 183
+	    skipped_mse_2_183 = MSE(real_skipped2,data_exp_183_skipped2)
+	    skipped_nmse_2_183 = nMSE(real_skipped2,data_exp_183_skipped2)
+	    skipped_negll_2_183 = negll(real_skipped2,data_exp_183_skipped2,n_u3_val) 
+		
+		###loss values for exp 807
+		skipped_mse_2_807 = MSE(real_skipped2,data_exp_807_skipped2)
+	    skipped_nmse_2_807 = nMSE(real_skipped2,data_exp_807_skipped2)
+	    skipped_negll_2_807 = negll(real_skipped2,data_exp_807_skipped2,n_u3_minl) 
+		
+		### plot of u2 with new validation set
+	    p4_2 = plot(time_skipped,data_exp_807_skipped2,label="min loss skipped data points", xlabel="Time",title="u3")
+	    p4_2 = plot!(time_skipped,data_exp_183_skipped2, label="min val loss skipped data points")
+	    p4_2 = plot!(real_data[1,:],real_data[3,:],label="real data")
+	    p4_2=scatter!(time_skipped,real_skipped2,markershape=:x, color=2, label="Skipped datapoints")
+	
+	
+	    ###new validation values for u3#####
+	
+	    real_skipped3 = transpose([transpose(y_obs[3,1:n_skip_data:time_break]) transpose(y_obs[3,time_break:end])])
+			
+	    data_exp_183_skipped3 = transpose([transpose(data_exp_183[1:n_skip_data:time_break,4]) transpose(data_exp_183[time_break:end,4])])
+		
+	    data_exp_807_skipped3 = transpose([transpose(data_exp_807[1:n_skip_data:time_break,4]) transpose(data_exp_807[time_break:end,4])])
+		
+		###loss values for exp 183
+	    skipped_mse_3_183 = MSE(real_skipped3,data_exp_183_skipped3)
+	    skipped_nmse_3_183 = nMSE(real_skipped3,data_exp_183_skipped3)
+	    skipped_negll_3_183 = negll(real_skipped3,data_exp_183_skipped3,n_u3_val) 
+		
+		###loss values for exp 807
+		skipped_mse_3_807 = MSE(real_skipped3,data_exp_807_skipped3)
+	    skipped_nmse_3_807 = nMSE(real_skipped3,data_exp_807_skipped3)
+	    skipped_negll_3_807 = negll(real_skipped3,data_exp_807_skipped3,n_u3_minl) 
+		
+		### plot of u3 with new validation set
+	    p4_3 = plot(time_skipped,data_exp_807_skipped3,label="min loss skipped data points", xlabel="Time",title="u3")
+	    p4_3 = plot!(time_skipped,data_exp_183_skipped3, label="min val loss skipped data points")
+	    p4_3 = plot!(real_data[1,:],real_data[4,:],label="real data")
+	    p4_3=scatter!(time_skipped,real_skipped3,markershape=:x, color=2, label="Skipped datapoints")
+		
+		
+    return skipped_mse_3_183,skipped_nmse_3_183,skipped_negll_3_183, p4_1,p4_2,p4_3, skipped_mse_3_807, skipped_nmse_3_807, skipped_negll_3_807
 end
 end
+
+# ╔═╡ 8c1543eb-2b2d-4aba-81ea-dc3c50cf1bc5
+md""" #### compare all validation set options ####"""
 
 # ╔═╡ 24cde329-c4c0-4fd3-9783-86e603d71f8c
 begin
@@ -216,6 +264,9 @@ p_nmse_807 = heatmap(nmse_values_807, title="nMSE in dependence of skipped value
 # ╔═╡ de32000a-17ca-4f95-ac4d-90d76cf1a193
 p_ngll_807 = heatmap(ngll_values_807, title="NegLL in dependence of skipped values", xlabel="time break", ylabel="skip step",  colorbar_title="NegLL")
 
+# ╔═╡ 87c2b13a-65e7-4798-b7e9-872da0c18105
+md""" MSE, nMSE and NegLL for Experiment 183"""
+
 # ╔═╡ 80105ef7-6204-42d6-9f4c-40dfc3a48591
 begin
 	md"MSE"
@@ -231,6 +282,9 @@ begin
 	md"NegLL"
 	
 end
+
+# ╔═╡ e94a8e6a-a5eb-4a7c-8a58-eda0097752b5
+md""" ###### Compare plots wrt validation set"""
 
 # ╔═╡ 7b7c66f8-f9d4-4794-b6a2-26ac8b50b56c
 begin
@@ -2742,11 +2796,16 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
+# ╟─c0fba313-f6d9-4988-8517-cdf5f53556f8
 # ╟─c27ac42e-6372-11ee-07d8-8116de3cff75
+# ╟─a2e470ae-143d-4e0a-9c94-b524ca4c5417
 # ╟─bb5cc10a-7db0-413b-b872-f85c8f98a8e8
+# ╟─bd20b194-e19e-4d6e-bb8c-63dd2f4e9f3f
+# ╟─ddbdd6f0-9d12-4a00-8c34-f702d3ba07f9
+# ╟─42569250-99ca-4962-ab49-ab90c093cc79
 # ╟─575d75ce-d27b-48b2-ace1-c0b0024dd3c4
 # ╟─d85bd822-369a-450b-944d-c381f9049914
-# ╟─ddbdd6f0-9d12-4a00-8c34-f702d3ba07f9
+# ╟─8c1543eb-2b2d-4aba-81ea-dc3c50cf1bc5
 # ╟─24cde329-c4c0-4fd3-9783-86e603d71f8c
 # ╟─954da1f2-39a0-48f0-9e96-4e545aaa780d
 # ╟─2b58ffaf-539f-43b5-8624-f17277485feb
@@ -2757,6 +2816,7 @@ version = "1.4.1+1"
 # ╟─25644804-1a59-44ea-83fd-6d5cad17d43c
 # ╟─de32000a-17ca-4f95-ac4d-90d76cf1a193
 # ╟─d3a68446-e343-49e1-963d-626906d067c5
+# ╟─87c2b13a-65e7-4798-b7e9-872da0c18105
 # ╟─d29227d2-4e16-4f34-bc9d-cad845e9e23e
 # ╟─80105ef7-6204-42d6-9f4c-40dfc3a48591
 # ╟─bc2d5e7a-edbb-4fff-b1bf-65f78c5b093b
@@ -2764,6 +2824,7 @@ version = "1.4.1+1"
 # ╟─92843644-6647-4648-a209-2761731d5124
 # ╟─1a891cf1-6097-445a-b27f-938b121e915e
 # ╟─2936500e-11bc-4407-b644-88030bd9c622
+# ╟─e94a8e6a-a5eb-4a7c-8a58-eda0097752b5
 # ╟─7b7c66f8-f9d4-4794-b6a2-26ac8b50b56c
 # ╟─3a96f4ce-ed71-4d92-9532-109b0c63c67b
 # ╟─fd750a4e-eb78-4526-9566-70a3cd91e38a
