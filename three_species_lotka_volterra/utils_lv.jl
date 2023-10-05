@@ -58,7 +58,7 @@ Calculates the loss based on the model's predictions of observed states only (i.
                     if true: loss is equivalent to negative log likelihood
                     if false: loss is equivalent to the squared error
 """
-function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{Float64}=t_train, y_obs::Matrix{Float64}=[y_obs[:,1] y_obs[:,Not(1:3:end)]]; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
+function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{Float64}=t_train, y_obs::Matrix{Float64}=y_train; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
     l = convert(eltype(θ), 0)
     # solve ODE
     _prob = remake(prob_nn, u0 = IC, tspan = (t[1], t[end]), p = θ)  # update ODE Problem with nn parameters
@@ -90,7 +90,7 @@ function nll(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t, t_train::Vector{F
     end
 end;
 
-function val_loss(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t_val, t_train::Vector{Float64}= t_train, y_obs::Matrix{Float64}=y_obs[:,1:3:end]; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
+function val_loss(θ, IC::Vector{Float64}=IC, t::Vector{Float64}=t_val, t_train::Vector{Float64}= t_train, y_obs::Matrix{Float64}=y_validation; st_nn::NamedTuple = st, nn_model::Chain = nn_model) #y_hidden::Matrix{Float64}=0
     l = convert(eltype(θ), 0)
 
     # solve ODE
@@ -307,7 +307,7 @@ function plot_observed_lv(t_plot::Vector{Float64}, pred_obs::Matrix{Float64}, t_
         p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=false, plot_noise=false)
         
     end
-    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t_train, [y_obs[3,1]; y_obs[3,Not(1:3:end)]]; std=sqrt.(exp.(ps.n_u3)), return_plot=true, plot_observed=true, plot_noise=true)
+    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t_train, y_train[3,:]; std=sqrt.(exp.(ps.n_u3)), return_plot=true, plot_observed=true, plot_noise=true)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_with_noise.png"))
     if one_observable == false
@@ -318,7 +318,7 @@ function plot_observed_lv(t_plot::Vector{Float64}, pred_obs::Matrix{Float64}, t_
         p1 = plot_observed_trajectory("u1", t_plot, pred_obs[1,:], t_full, y_obs_full[1,:], t, y_obs[1,:]; return_plot=true, plot_observed=false, plot_noise=false)
         p2 = plot_observed_trajectory("u2", t_plot, pred_obs[2,:], t_full, y_obs_full[2,:], t, y_obs[2,:]; return_plot=true, plot_observed=false, plot_noise=false)
     end
-    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t_train, [y_obs[3,1]; y_obs[3,Not(1:3:end)]]; return_plot=true, plot_observed=true, plot_noise=false)
+    p3 = plot_observed_trajectory("u3", t_plot, pred_obs[3,:], t_full, y_obs_full[3,:], t_train, y_train[3,:]; return_plot=true, plot_observed=true, plot_noise=false)
     prediction_plot = plot(p1, p2, p3, layout=(1, 3), size=(1300, 400))
     savefig(prediction_plot, joinpath(path_to_store, "observables_without_noise.png"))
 end

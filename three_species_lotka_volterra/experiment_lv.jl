@@ -17,7 +17,7 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "14_09_23_test"
+const experiment_name = "28_09_23"
 
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
@@ -39,7 +39,7 @@ exp_hidden_neurons = (4, 8, )
 exp_act_fct = ("tanh", ) 
 exp_tolerance = (1e-8, )
 exp_par_setting = (1, ) # define what rows of the startpoints.csv file to try out
-exp_dataset = ("lotka_volterra_datapoints_80_noise_5", "lotka_volterra_datapoints_80_noise_15", "lotka_volterra_datapoints_40_noise_5", "lotka_volterra_datapoints_40_noise_15")
+exp_dataset = ("lotka_volterra_datapoints_40_noise_5", "lotka_volterra_datapoints_80_noise_15", "lotka_volterra_datapoints_80_noise_5", "lotka_volterra_datapoints_40_noise_15")
 
 experiments = collect(Iterators.product(exp_mechanistic_setting, exp_sampling_strategy, exp_dataset, exp_λ_reg, exp_lr_adam, 
     exp_hidden_layers, exp_hidden_neurons, exp_act_fct, exp_tolerance, exp_par_setting, exp_early_stopping, exp_reg));
@@ -49,6 +49,8 @@ if test_setup
 else 
     array_nr = parse(Int, ARGS[1])
 end
+skip_step = 5       #until time_break every 5th value is chosen for the validation set
+time_break = 29
 
 mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row, early_stopping, reg = experiments[array_nr]
 exp_specifics = array_nr
@@ -96,10 +98,26 @@ end
 
 IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name)
 
-t_train = t[Not(1:3:end)]
+#########training and validation data###############
+
+t_half_1 = t[1:time_break]
+t_half_2 = t[time_break:end]
+
+#time points for training
+t_train = t_half_1[Not(1:skip_step:end)]
 pushfirst!(t_train,0.0)
 
-t_val = t[1:3:end]
+#time points for validation
+t_val = vcat(t_half_1[1:skip_step:end], t_half_2)
+
+#training data values
+y_half_1 = y_obs[:,1:time_break]
+y_half_2 = y_obs[:,time_break:end]
+y_train = [y_half_1[:,1] y_half_1[:,Not(1:skip_step:end)]]
+
+#validation values
+y_validation = [y_half_1[:,1:skip_step:end] y_half_2]
+
 # create model 
 nn_model, ps, st = create_model(act_fct_name, hidden_layers, hidden_neurons, p_ph, n_out)
 
@@ -153,6 +171,23 @@ end
 # store final values of all mechanistic parameters to csv
 pars = vcat(parameter_names)
 p_mech = convert(Vector{Union{Missing,Float64}}, p_opt[1:length(pars)])
+save(joinpath(experiment_run_path, "nn_settings.jld"), 
+    "r1", p_opt.r1,
+    "a1_1", p_opt.a1_1,
+    "a1_2",p_opt.a1_2,
+    "a1_3", p_opt.a1_3,
+    "r2", p_opt.r2,
+    "a2_1", p_opt.a2_1,
+    "a2_2",p_opt.a2_2,
+    "a2_3", p_opt.a2_3,
+    "r3", p_opt.r3,
+    "a3_1", p_opt.a3_1,
+    "a3_2",p_opt.a3_2,
+    "a3_3", p_opt.a3_3,
+    "n_u1", p_opt.n_u1,
+    "n_u2", p_opt.n_u2,
+    "n_u3", p_opt.n_u3,
+    "ude", convert(Vector{Union{Missing,Float64}},p_opt.ude))
 if mechanistic_setting == "lv_missing_dynamics"
     p_mech[1] = missing
     p_mech[5] = missing
