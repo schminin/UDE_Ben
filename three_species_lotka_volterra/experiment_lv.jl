@@ -17,7 +17,7 @@ Random.seed!(rng, 1)
 
 
 ############# Experimental Settings ###################
-const experiment_name = "28_09_23"
+const experiment_name = "05_10_23"
 
 const test_setup = true  # if used on the cluster this has to be set to false
 const create_plots = true
@@ -50,7 +50,7 @@ else
     array_nr = parse(Int, ARGS[1])
 end
 skip_step = 5       #until time_break every 5th value is chosen for the validation set
-time_break = 29
+time_break_in_sec = 7.0
 
 mechanistic_setting, sampling_strategy, dataset, λ_reg, lr_adam, hidden_layers, hidden_neurons, act_fct_name, tolerance, par_row, early_stopping, reg = experiments[array_nr]
 exp_specifics = array_nr
@@ -99,6 +99,8 @@ end
 IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, problem_name)
 
 #########training and validation data###############
+#find index belonging to the chosen time
+time_break = findall(x->x==time_break_in_sec,t)
 
 t_half_1 = t[1:time_break]
 t_half_2 = t[time_break:end]
