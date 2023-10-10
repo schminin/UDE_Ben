@@ -100,7 +100,7 @@ IC, tspan, t, y_obs, t_full, y_obs_full, p_true, p_ph = load_data(data_path, pro
 
 #########training and validation data###############
 #find index belonging to the chosen time
-time_break = findall(x->x==time_break_in_sec,t)
+time_break = findall(x->x==time_break_in_sec,t)[1]
 
 t_half_1 = t[1:time_break]
 t_half_2 = t[time_break:end]
