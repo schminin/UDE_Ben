@@ -67,7 +67,7 @@ function load_data(data_path::String,problem_name::String)
     random_vec = rand(12)
 
     #random setting
-    """
+    
     p_ph =(; r1 = transform_par(random_vec[1]),
             a1_1 = transform_par(random_vec[2]), 
             a1_2 = transform_par(random_vec[3]),
@@ -100,7 +100,7 @@ function load_data(data_path::String,problem_name::String)
             n_u1 = std(y_obs_full[1,:]),
             n_u2 = std(y_obs_full[2,:]),
             n_u3 = std(y_obs_full[3,:]))
-
+    """
     # data used for training
     df =CSV.read(data_path, DataFrame, delim = ",")
     t = df[!, "t"]
