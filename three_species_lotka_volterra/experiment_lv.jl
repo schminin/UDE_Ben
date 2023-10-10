@@ -127,7 +127,7 @@ nn_model, ps, st = create_model(act_fct_name, hidden_layers, hidden_neurons, p_p
 dynamics!(du, u, ps, t) = ude_dynamics!(du, u, ps, st, t; nn_model)
 
 # Define the problem
-prob_nn = ODEProblem(dynamics!, IC, tspan, ps);
+prob_nn = ODEProblem(dynamics!, IC, tspan, ps); ### mit in trainings jl
 
 #Training
 stepnorm_bfgs = 0.1*lr_adam
