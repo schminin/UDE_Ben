@@ -44,7 +44,7 @@ Insert experiment name
 """
 
 # ╔═╡ 3d1f5a9a-b697-4179-8ef9-092dfcc24e90
-@bind experiment_name TextField(; default="18_08_23")
+@bind experiment_name TextField(; default="08_10_23")
 
 # ╔═╡ a057a28e-5863-4b02-8e3a-2a7f0ab3c699
 begin 
@@ -54,7 +54,7 @@ begin
 	lr_adam_count = length(get(hp_settings,"lr_adam",42))
 	hidden_layers_count = length(get(hp_settings,"hidden_layer",42))
 	hidden_neurons_count = length(get(hp_settings,"hidden_neurons",42))
-	#early_stopping count = length(get(hp_settings,"early stopping",42))
+	early_stopping_count = length(get(hp_settings,"early stopping",42))
 	act_fct_name_count = length(get(hp_settings,"act_fct",42))
 	tolerance_count= length(get(hp_settings,"tolerance",42))
 	par_setting_count = length(get(hp_settings,"par_setting",42))
@@ -227,7 +227,7 @@ WebIO = "~0.8.21"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.2"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "09761feeb1b2b532c9c6908bb993f4e65eef4a29"
 
@@ -407,6 +407,12 @@ version = "0.9.3"
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 version = "1.6.0"
+
+[[deps.EpollShim_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "8e9441ee83492030ace98f9789a654a6d0b1f643"
+uuid = "2702e6a9-849d-5ed8-8c21-79e8b8f9ee43"
+version = "0.0.20230411+0"
 
 [[deps.ExceptionUnwrapping]]
 deps = ["Test"]
@@ -1235,7 +1241,7 @@ uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.2.0"
 
 [[deps.Wayland_jll]]
-deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
+deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "ed8d92d9774b077c53e1da50fd81a36af3744c1c"
 uuid = "a2964d1f-97da-50d4-b82a-358c7fce9d89"
 version = "1.21.0+0"
@@ -1504,9 +1510,9 @@ version = "1.4.1+0"
 # ╟─422c91a9-eaff-42c4-8880-5778cf45dc47
 # ╟─32dffc0f-76ab-4b11-99ca-bf92e57baf3e
 # ╟─bc2b81ac-cd69-4d16-971d-421314313cf2
-# ╟─3621398e-3838-11ee-2e46-99fd8876add1
+# ╠═3621398e-3838-11ee-2e46-99fd8876add1
 # ╟─b88d2584-0632-4c17-9022-f207de0b9b93
-# ╟─3d1f5a9a-b697-4179-8ef9-092dfcc24e90
+# ╠═3d1f5a9a-b697-4179-8ef9-092dfcc24e90
 # ╠═a057a28e-5863-4b02-8e3a-2a7f0ab3c699
 # ╠═3e54ca9a-a13c-45a4-90da-8a4d740c8c14
 # ╠═0e640d35-321c-47f0-8b0e-2eaf302cf86c
@@ -1528,7 +1534,7 @@ version = "1.4.1+0"
 # ╟─ea1e046d-bf54-43b9-a658-eb4b404d0b02
 # ╟─f84e6bcc-713f-4622-b0c5-2af7529f6fd4
 # ╟─13eeffed-26a0-4daa-b20d-895c48a087bc
-# ╟─7d8eaf3c-f447-4ed9-93cb-7d4fb3093b59
+# ╠═7d8eaf3c-f447-4ed9-93cb-7d4fb3093b59
 # ╟─e8644c68-edb4-4fce-aa1a-2c8a50380110
 # ╟─db1accb9-e51a-483e-8d4a-4ea690614db9
 # ╟─86cbc16b-6c39-4502-a4bc-6c4ffa557b39
